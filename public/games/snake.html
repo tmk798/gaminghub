@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Snake Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #2c3e50 0%, #000000 55%, #000000 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #ecf0f1;
+      overflow: hidden;
+    }
+
+    .game-wrapper {
+      width: min(90vmin, 520px);
+      height: min(90vmin, 520px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0.9rem;
+      background: rgba(0, 0, 0, 0.45);
+      border-radius: 0.75rem;
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.7);
+      font-size: 0.9rem;
+    }
+
+    .hud-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hud-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      opacity: 0.65;
+    }
+
+    .hud-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .hud-center {
+      text-align: center;
+      font-size: 0.9rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+
+    .hud-buttons {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    .board-wrapper {
+      flex: 1;
+      background: linear-gradient(#145a32, #0b3a1f 60%, #03120a 100%);
+      border-radius: 1.1rem;
+      box-shadow: 0 0 22px rgba(0, 0, 0, 0.85);
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      background: #000000;
+      border-radius: 0.9rem;
+      border: 2px solid rgba(46, 204, 113, 0.8);
+      box-shadow: 0 0 18px rgba(46, 204, 113, 0.7);
+      image-rendering: pixelated;
+    }
+
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1b2735 0%, #090a0f 55%, #000 100%);
+      color: #ecf0f1;
+      text-align: center;
+      padding: 1.5rem;
+      z-index: 10;
+    }
+
+    .screen-hidden {
+      display: none;
+    }
+
+    .screen h1 {
+      font-size: clamp(2.3rem, 6vw, 3.2rem);
+      margin-bottom: 0.5rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    .screen h1 span {
+      display: block;
+      font-size: 0.55em;
+      letter-spacing: 8px;
+      opacity: 0.8;
+    }
+
+    .screen p {
+      max-width: 360px;
+      margin: 0.4rem auto 1.4rem;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .big-score {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 0.2rem;
+    }
+
+    .screen-buttons {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 0.6rem;
+    }
+
+    button {
+      border: none;
+      outline: none;
+      font: inherit;
+      padding: 0.55rem 1.1rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.18s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      white-space: nowrap;
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: none !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2ecc71, #1abc9c);
+      color: #04110a;
+      box-shadow: 0 4px 12px rgba(26, 188, 156, 0.7);
+    }
+
+    .btn-secondary {
+      background: #1e272e;
+      color: #ecf0f1;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid rgba(236, 240, 241, 0.25);
+      color: #d2dae2;
+    }
+
+    .corner-text {
+      position: fixed;
+      right: 10px;
+      bottom: 8px;
+      font-size: 0.7rem;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    @media (max-width: 480px) {
+      .hud {
+        padding: 0.55rem 0.7rem;
+        font-size: 0.8rem;
+      }
+      .hud-value {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Start Screen -->
+  <div id="startScreen" class="screen">
+    <h1>Snake<span>Classic</span></h1>
+    <p>
+      Use the arrow keys to move. Eat apples to grow.<br>
+      Game ends if you hit the wall or your own body.<br>
+      Starts slow, then speed increases as you score.
+    </p>
+    <div class="screen-buttons">
+      <button class="btn-primary" id="startBtn">Start Game</button>
+<button class="homeBtn" onclick="window.location.href='/'">
+  Go Home
+</button>
+
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameOverScreen" class="screen screen-hidden">
+    <h1>Game Over</h1>
+    <div class="big-score" id="finalScore">0</div>
+    <p>
+      Snake crashed. Try again or go back home.
+    </p>
+    <div class="screen-buttons">
+      <button class="btn-primary" id="playAgainBtn">Try Again</button>
+      <button class="btn-secondary" onclick="window.history.back()">Go Home</button>
+    </div>
+  </div>
+
+  <!-- Game -->
+  <div class="game-wrapper">
+    <div class="hud">
+      <div class="hud-block">
+        <div class="hud-label">Score</div>
+        <div class="hud-value" id="scoreText">0</div>
+      </div>
+
+      <div class="hud-center">Snake Game</div>
+
+      <div class="hud-buttons">
+        <button class="btn-secondary" id="stopBtn">Stop</button>
+        <div class="hud-block">
+          <div class="hud-label">Best</div>
+          <div class="hud-value" id="bestText">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="board-wrapper">
+      <canvas width="400" height="400" id="game"></canvas>
+    </div>
+  </div>
+
+  <div class="corner-text">Use ↑ ↓ ← →</div>
+
+  <script>
+    var canvas = document.getElementById('game');
+    var context = canvas.getContext('2d');
+
+    var grid = 16;
+    var count = 0;
+
+    var snake = {
+      x: 160,
+      y: 160,
+      dx: grid,
+      dy: 0,
+      cells: [],
+      maxCells: 4
+    };
+
+    var apple = {
+      x: 320,
+      y: 320
+    };
+
+    var score = 0;
+    var best = 0;
+    var speedSkip = 8; // start slow (higher value = slower)
+    var animationId;
+    var running = false;
+
+    var scoreText = document.getElementById('scoreText');
+    var bestText = document.getElementById('bestText');
+    var finalScore = document.getElementById('finalScore');
+
+    var startScreen = document.getElementById('startScreen');
+    var gameOverScreen = document.getElementById('gameOverScreen');
+    var startBtn = document.getElementById('startBtn');
+    var playAgainBtn = document.getElementById('playAgainBtn');
+    var stopBtn = document.getElementById('stopBtn');
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    function resetSnake() {
+      snake.x = 160;
+      snake.y = 160;
+      snake.cells = [];
+      snake.maxCells = 4;
+      snake.dx = grid;
+      snake.dy = 0;
+    }
+
+    function placeApple() {
+      apple.x = getRandomInt(0, 25) * grid;
+      apple.y = getRandomInt(0, 25) * grid;
+    }
+
+    // speed increases as score increases
+    function updateSpeed() {
+      // start at 8 (slow), go down towards 2
+      speedSkip = Math.max(2, 8 - score);
+    }
+
+    function loop() {
+      animationId = requestAnimationFrame(loop);
+
+      if (++count < speedSkip) {
+        return;
+      }
+
+      count = 0;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      snake.x += snake.dx;
+      snake.y += snake.dy;
+
+      // check wall collision: end game if hits border
+      if (
+        snake.x < 0 ||
+        snake.x >= canvas.width ||
+        snake.y < 0 ||
+        snake.y >= canvas.height
+      ) {
+        handleGameOver();
+        return;
+      }
+
+      snake.cells.unshift({ x: snake.x, y: snake.y });
+
+      if (snake.cells.length > snake.maxCells) {
+        snake.cells.pop();
+      }
+
+      // draw apple
+      context.fillStyle = 'red';
+      context.fillRect(apple.x, apple.y, grid - 1, grid - 1);
+
+      // draw snake
+      context.fillStyle = '#2ecc71';
+      snake.cells.forEach(function (cell, index) {
+        context.fillRect(cell.x, cell.y, grid - 1, grid - 1);
+
+        // eat apple
+        if (cell.x === apple.x && cell.y === apple.y) {
+          snake.maxCells++;
+          score++;
+          scoreText.textContent = score;
+
+          if (score > best) {
+            best = score;
+            bestText.textContent = best;
+          }
+
+          updateSpeed();
+          placeApple();
+        }
+
+        // collision with body
+        for (var i = index + 1; i < snake.cells.length; i++) {
+          if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+            handleGameOver();
+            return;
+          }
+        }
+      });
+    }
+
+    function startGame() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+
+      score = 0;
+      scoreText.textContent = score;
+      speedSkip = 8; // slow start
+      count = 0;
+
+      resetSnake();
+      placeApple();
+      updateSpeed();
+
+      startScreen.classList.add('screen-hidden');
+      gameOverScreen.classList.add('screen-hidden');
+
+      running = true;
+      loop();
+    }
+
+    function handleGameOver() {
+      running = false;
+      cancelAnimationFrame(animationId);
+      finalScore.textContent = score;
+      gameOverScreen.classList.remove('screen-hidden');
+    }
+
+    // arrow key controls
+    document.addEventListener('keydown', function (e) {
+      if (!running) return;
+
+      if (e.which === 37 && snake.dx === 0) {        // left
+        snake.dx = -grid;
+        snake.dy = 0;
+      } else if (e.which === 38 && snake.dy === 0) { // up
+        snake.dy = -grid;
+        snake.dx = 0;
+      } else if (e.which === 39 && snake.dx === 0) { // right
+        snake.dx = grid;
+        snake.dy = 0;
+      } else if (e.which === 40 && snake.dy === 0) { // down
+        snake.dy = grid;
+        snake.dx = 0;
+      }
+    });
+
+    // buttons
+    startBtn.addEventListener('click', startGame);
+    playAgainBtn.addEventListener('click', startGame);
+
+    // stop button: end game anytime
+    stopBtn.addEventListener('click', function () {
+      if (!running) return;
+      handleGameOver();
+    });
+  </script>
+</body>
+</html>

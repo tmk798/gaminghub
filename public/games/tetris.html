@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Basic Tetris HTML Game</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #f06d06;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: white;
+      font-family: system-ui, sans-serif;
+    }
+
+    h1 { font-size: 3vw; margin-bottom: 10px; }
+
+    .game-wrapper {
+      background: #111;
+      padding: 10px 12px 15px;
+      border-radius: 12px;
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      margin-bottom: 8px;
+    }
+
+    button {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      text-transform: uppercase;
+      background: #f06d06;
+      color: white;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    #homeBtn {
+      background: #ff4757;
+      font-weight: bold;
+    }
+
+    canvas {
+      border: 1px solid white;
+      background: black;
+      border-radius: 8px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Tetris</h1>
+
+  <div class="game-wrapper">
+    <div class="hud">
+      <button id="startBtn">Start</button>
+      <button id="stopBtn">Stop</button>
+      <button id="homeBtn">Go Home</button>
+    </div>
+
+    <canvas width="320" height="640" id="game"></canvas>
+  </div>
+
+<script>
+function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function generateSequence() {
+  const seq = ['I','J','L','O','S','T','Z'];
+  while (seq.length) tetrominoSequence.push(seq.splice(getRandomInt(0,seq.length-1),1)[0]);
+}
+
+function getNextTetromino() {
+  if (!tetrominoSequence.length) generateSequence();
+  const name = tetrominoSequence.pop();
+  return {
+    name,
+    matrix: tetrominos[name],
+    row: name === 'I' ? -1 : -2,
+    col: playfield[0].length/2 - Math.ceil(tetrominos[name][0].length/2)
+  };
+}
+
+function rotate(matrix){
+  const N = matrix.length-1;
+  return matrix.map((row,i)=>row.map((val,j)=>matrix[N-j][i]));
+}
+
+function isValidMove(matrix,r,c){
+  return matrix.every((row,y)=>row.every((val,x)=>!val||
+    (c+x>=0&&c+x<10&&r+y<20&&!playfield[r+y][c+x])
+  ));
+}
+
+function placeTetromino(){
+  for(let y=0;y<tetromino.matrix.length;y++)
+    for(let x=0;x<tetromino.matrix[y].length;x++)
+      if(tetromino.matrix[y][x]){
+        if(tetromino.row+y<0) return showGameOver();
+        playfield[tetromino.row+y][tetromino.col+x]=tetromino.name;
+      }
+
+  for(let r=19;r>=0;){
+    if(playfield[r].every(v=>v)) for(let rr=r;rr>0;rr--) playfield[rr]=[...playfield[rr-1]];
+    else r--;
+  }
+  tetromino=getNextTetromino();
+}
+
+function showGameOver(){
+  cancelAnimationFrame(rAF); gameOver=true;
+  context.globalAlpha=.75; context.fillStyle="black";
+  context.fillRect(0,canvas.height/2-30,canvas.width,60);
+  context.globalAlpha=1;
+  context.fillStyle="white"; context.font="36px monospace";
+  context.textAlign="center"; context.fillText("GAME OVER",160,320);
+}
+
+const canvas=document.getElementById("game"),context=canvas.getContext("2d"),grid=32;
+const tetrominoSequence=[],playfield=[];
+for(let r=-2;r<20;r++){ playfield[r]=Array(10).fill(0); }
+
+const tetrominos={
+  I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+  J:[[1,0,0],[1,1,1],[0,0,0]],
+  L:[[0,0,1],[1,1,1],[0,0,0]],
+  O:[[1,1],[1,1]],
+  S:[[0,1,1],[1,1,0],[0,0,0]],
+  Z:[[1,1,0],[0,1,1],[0,0,0]],
+  T:[[0,1,0],[1,1,1],[0,0,0]]
+};
+
+const colors={I:'cyan',O:'yellow',T:'purple',S:'green',Z:'red',J:'blue',L:'orange'};
+
+let tetromino=getNextTetromino(),count=0,rAF=null,gameOver=false,running=false,drop=35;
+
+function loop(){
+  rAF=requestAnimationFrame(loop);
+  context.clearRect(0,0,320,640);
+
+  for(let r=0;r<20;r++)
+    for(let c=0;c<10;c++)
+      if(playfield[r][c]){ context.fillStyle=colors[playfield[r][c]]; context.fillRect(c*grid,r*grid,31,31); }
+
+  if(running && ++count>drop){
+    tetromino.row++; count=0;
+    if(!isValidMove(tetromino.matrix,tetromino.row,tetromino.col)){ tetromino.row--; placeTetromino(); }
+  }
+
+  if(tetromino){
+    context.fillStyle=colors[tetromino.name];
+    tetromino.matrix.forEach((row,y)=>row.forEach((v,x)=>{
+      if(v) context.fillRect((tetromino.col+x)*grid,(tetromino.row+y)*grid,31,31);
+    }));
+  }
+}
+
+document.addEventListener("keydown",e=>{
+  if(!running||gameOver) return;
+  if(e.key==="ArrowLeft"||e.key==="ArrowRight"){
+    let c=tetromino.col+(e.key==="ArrowLeft"?-1:1);
+    if(isValidMove(tetromino.matrix,tetromino.row,c)) tetromino.col=c;
+  }
+  if(e.key==="ArrowUp"){
+    let m=rotate(tetromino.matrix);
+    if(isValidMove(m,tetromino.row,tetromino.col)) tetromino.matrix=m;
+  }
+  if(e.key==="ArrowDown"){
+    let r=tetromino.row+1;
+    if(!isValidMove(tetromino.matrix,r,tetromino.col)){ tetromino.row--; return placeTetromino(); }
+    tetromino.row=r;
+  }
+});
+
+document.getElementById("startBtn").onclick=()=>running=true;
+document.getElementById("stopBtn").onclick=()=>running=false;
+document.getElementById("homeBtn").onclick=()=>location.href="/";
+
+rAF=requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>

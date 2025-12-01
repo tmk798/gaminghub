@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chess Timer – Green vs White</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #222, #000);
+      color: #f1f2f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 900px;
+      background: #111;
+      border-radius: 18px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      border: 1px solid #333;
+      overflow: hidden;
+    }
+
+    .app-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid #222;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .title-block h1 {
+      font-size: 22px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #00ff9d;
+    }
+
+    .title-block span {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .time-inputs {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      font-size: 12px;
+      color: #ddd;
+    }
+
+    .time-inputs input {
+      width: 48px;
+      background: #000;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 3px 6px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .btn {
+      border: none;
+      outline: none;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: transform 0.08s, box-shadow 0.08s, background 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn.primary {
+      background: #00ff9d;
+      color: #000;
+      font-weight: 600;
+    }
+
+    .btn.whiteSide {
+      background: #ffffff;
+      color: #000;
+      font-weight: 600;
+    }
+
+    .btn.greenSide {
+      background: #00b894;
+      color: #000;
+      font-weight: 600;
+    }
+
+    .btn.secondary {
+      background: #222;
+      color: #f1f2f6;
+    }
+
+    .btn.home {
+      background: #0984e3;
+      color: #fff;
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    .btn:hover {
+      filter: brightness(1.1);
+    }
+
+    .app-main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 260px;
+    }
+
+    .side {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+
+    .side.green {
+      background: linear-gradient(135deg, #002b18, #013220);
+      border-right: 1px solid #222;
+    }
+
+    .side.white {
+      background: linear-gradient(135deg, #f5f6fa, #dfe6e9);
+      color: #111;
+    }
+
+    .side-label {
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    .side.green .side-label {
+      color: #00ff9d;
+    }
+
+    .side.white .side-label {
+      color: #2d3436;
+    }
+
+    .timer-display {
+      font-size: 46px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      padding: 6px 14px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.35);
+      min-width: 180px;
+      text-align: center;
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+    }
+
+    .side.white .timer-display {
+      background: rgba(0,0,0,0.1);
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.25);
+    }
+
+    .side.active {
+      box-shadow: inset 0 0 18px rgba(0,255,157,0.7);
+    }
+
+    .side.active::after {
+      content: "RUNNING";
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #00ff9d;
+      color: #000;
+      letter-spacing: 1px;
+    }
+
+    .side-buttons {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .app-footer {
+      border-top: 1px solid #222;
+      padding: 10px 16px 12px;
+      font-size: 11px;
+      line-height: 1.5;
+      background: #050505;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .message {
+      color: #00ff9d;
+      min-height: 16px;
+    }
+
+    .instructions-title {
+      font-weight: 600;
+      color: #f1f2f6;
+    }
+
+    .instructions {
+      color: #b2bec3;
+      padding-left: 12px;
+    }
+
+    .instructions li {
+      margin-left: 10px;
+    }
+
+    @media (max-width: 750px) {
+      .app-main {
+        grid-template-columns: 1fr;
+      }
+      .side {
+        border-right: none;
+        border-bottom: 1px solid #222;
+      }
+      .side.white {
+        border-bottom: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .timer-display {
+        font-size: 34px;
+        min-width: 140px;
+      }
+      .title-block h1 {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <!-- HEADER -->
+    <div class="app-header">
+      <div class="title-block">
+        <h1>Chess Timer</h1>
+        <span>Green vs White • Classic chess clock behaviour.</span>
+      </div>
+
+      <div class="controls">
+        <div class="time-inputs">
+          <span>Time:</span>
+          <input type="number" id="minutesInput" min="0" value="5" /> min
+          <input type="number" id="secondsInput" min="0" max="59" value="0" /> sec
+          <button class="btn primary" id="setTimeBtn">Set Time</button>
+        </div>
+        <div class="buttons">
+          <button class="btn whiteSide" id="startWhiteBtn">Start White</button>
+          <button class="btn greenSide" id="startGreenBtn">Start Green</button>
+          <button class="btn secondary" id="pauseBtn">Pause All</button>
+          <button class="btn secondary" id="resetBtn">Reset</button>
+          <button class="homeBtn" onclick="window.location.href='/'">Go Home</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN (TIMERS) -->
+    <div class="app-main">
+      <div class="side green" id="greenSide">
+        <div class="side-label">Green Side</div>
+        <div class="timer-display" id="greenTime">05:00.0</div>
+        <div class="side-buttons">
+          <button class="btn greenSide" id="greenSideBtn">Tap (Green)</button>
+        </div>
+      </div>
+
+      <div class="side white" id="whiteSide">
+        <div class="side-label">White Side</div>
+        <div class="timer-display" id="whiteTime">05:00.0</div>
+        <div class="side-buttons">
+          <button class="btn whiteSide" id="whiteSideBtn">Tap (White)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="app-footer">
+      <div class="message" id="message">Set time, then press Start White/Green. Players tap their own side to switch.</div>
+      <div class="instructions-title">How to use:</div>
+      <ul class="instructions">
+        <li>Set minutes and seconds, then click <b>Set Time</b>.</li>
+        <li>Start the game with <b>Start White</b> or <b>Start Green</b>.</li>
+        <li>When your move is done, tap your own side button: your clock stops, opponent’s starts.</li>
+        <li><b>Pause All</b> stops both clocks; <b>Reset</b> sets both back to initial time.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // DOM elements
+    const minutesInput = document.getElementById("minutesInput");
+    const secondsInput = document.getElementById("secondsInput");
+    const setTimeBtn   = document.getElementById("setTimeBtn");
+
+    const startWhiteBtn = document.getElementById("startWhiteBtn");
+    const startGreenBtn = document.getElementById("startGreenBtn");
+
+    const pauseBtn  = document.getElementById("pauseBtn");
+    const resetBtn  = document.getElementById("resetBtn");
+
+    const whiteTimeEl = document.getElementById("whiteTime");
+    const greenTimeEl = document.getElementById("greenTime");
+
+    const whiteSideEl = document.getElementById("whiteSide");
+    const greenSideEl = document.getElementById("greenSide");
+
+    const whiteSideBtn = document.getElementById("whiteSideBtn");
+    const greenSideBtn = document.getElementById("greenSideBtn");
+
+    const msgEl = document.getElementById("message");
+
+    // Timer data
+    let baseTimeMs     = 5 * 60 * 1000; // default 5 minutes
+    let remainingWhite = baseTimeMs;
+    let remainingGreen = baseTimeMs;
+
+    let activeSide = null;  // 'white' or 'green' or null
+    let timerId    = null;
+    let lastTick   = null;
+
+    // Format ms -> MM:SS.d
+    function formatTime(ms) {
+      if (ms < 0) ms = 0;
+      const totalSeconds = ms / 1000;
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = Math.floor(totalSeconds % 60);
+      const tenths  = Math.floor((ms % 1000) / 100);
+
+      const minStr = String(minutes).padStart(2, "0");
+      const secStr = String(seconds).padStart(2, "0");
+      return `${minStr}:${secStr}.${tenths}`;
+    }
+
+    function updateDisplay() {
+      whiteTimeEl.textContent = formatTime(remainingWhite);
+      greenTimeEl.textContent = formatTime(remainingGreen);
+    }
+
+    function updateHighlight() {
+      whiteSideEl.classList.toggle("active", activeSide === "white");
+      greenSideEl.classList.toggle("active", activeSide === "green");
+    }
+
+    function stopAll() {
+      activeSide = null;
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+      updateHighlight();
+    }
+
+    function startSide(side) {
+      // Start running for given side (no toggle here)
+      activeSide = side;
+      updateHighlight();
+      msgEl.textContent = side === "white" ? "White is running..." : "Green is running...";
+
+      if (timerId === null) {
+        lastTick = Date.now();
+        timerId = setInterval(tick, 100); // every 100ms
+      }
+    }
+
+    function tick() {
+      const now = Date.now();
+      const delta = now - lastTick;
+      lastTick = now;
+
+      if (activeSide === "white") {
+        remainingWhite -= delta;
+        if (remainingWhite <= 0) {
+          remainingWhite = 0;
+          updateDisplay();
+          stopAll();
+          msgEl.textContent = "White's time is over!";
+          return;
+        }
+      } else if (activeSide === "green") {
+        remainingGreen -= delta;
+        if (remainingGreen <= 0) {
+          remainingGreen = 0;
+          updateDisplay();
+          stopAll();
+          msgEl.textContent = "Green's time is over!";
+          return;
+        }
+      }
+
+      updateDisplay();
+    }
+
+    // Set time button
+    setTimeBtn.addEventListener("click", () => {
+      let mins = parseInt(minutesInput.value, 10);
+      let secs = parseInt(secondsInput.value, 10);
+
+      if (isNaN(mins) || mins < 0) mins = 0;
+      if (isNaN(secs) || secs < 0) secs = 0;
+      if (secs > 59) secs = 59;
+
+      baseTimeMs = (mins * 60 + secs) * 1000;
+      if (baseTimeMs <= 0) baseTimeMs = 1000; // avoid 0
+
+      stopAll();
+      remainingWhite = baseTimeMs;
+      remainingGreen = baseTimeMs;
+      updateDisplay();
+      msgEl.textContent = `Time set to ${mins} min ${secs} sec for both sides.`;
+    });
+
+    // Start buttons (only start if nothing running)
+    startWhiteBtn.addEventListener("click", () => {
+      if (activeSide === null) {
+        startSide("white");
+      } else {
+        msgEl.textContent = "Game already running. Use Tap buttons to switch turns.";
+      }
+    });
+
+    startGreenBtn.addEventListener("click", () => {
+      if (activeSide === null) {
+        startSide("green");
+      } else {
+        msgEl.textContent = "Game already running. Use Tap buttons to switch turns.";
+      }
+    });
+
+    // Side tap buttons – real chess logic:
+    // - if no one running: start that side
+    // - if that side is running: switch to opponent
+    whiteSideBtn.addEventListener("click", () => {
+      if (activeSide === null) {
+        startSide("white");
+      } else if (activeSide === "white") {
+        startSide("green"); // hand over to green
+      }
+    });
+
+    greenSideBtn.addEventListener("click", () => {
+      if (activeSide === null) {
+        startSide("green");
+      } else if (activeSide === "green") {
+        startSide("white"); // hand over to white
+      }
+    });
+
+    // Pause all
+    pauseBtn.addEventListener("click", () => {
+      stopAll();
+      msgEl.textContent = "Both timers paused.";
+    });
+
+    // Reset
+    resetBtn.addEventListener("click", () => {
+      stopAll();
+      remainingWhite = baseTimeMs;
+      remainingGreen = baseTimeMs;
+      updateDisplay();
+      msgEl.textContent = "Timer reset for both sides.";
+    });
+
+    // Initial display
+    updateDisplay();
+  </script>
+</body>
+</html>

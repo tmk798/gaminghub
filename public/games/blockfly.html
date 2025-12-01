@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Full Screen Game</title>
+
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+    font-family: Arial, sans-serif;
+  }
+
+  /* Game Over Screen */
+  #game-over-screen {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: none; /* hidden by default */
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 10;
+  }
+
+  #game-over-screen h1 {
+    color: white;
+    margin: 0 0 10px;
+  }
+
+  #game-over-screen p {
+    color: #ccc;
+    margin: 0 0 20px;
+  }
+
+  .game-btn {
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 6px;
+    margin: 0 10px;
+  }
+
+  .play-again {
+    background: yellow;
+  }
+
+  .home-btn {
+    background: white;
+  }
+</style>
+
+</head>
+<body>
+
+<!-- GAME OVER OVERLAY -->
+<div id="game-over-screen">
+  <h1>Game Over</h1>
+  <p>Score will reset if you play again.</p>
+  <div>
+    <button class="game-btn play-again" onclick="playAgain()">Play Again</button>
+<button class="homeBtn" onclick="window.location.href='/'">
+  Go Home
+</button>
+
+  </div>
+</div>
+
+<script>
+var gamePiece;
+var obstacles = [];
+var score;
+var gameOver = false;
+
+var GameArea = function(frameRate) {
+  this.canvas = document.createElement('canvas');
+  this.context = this.canvas.getContext('2d');
+  this.frameRate = frameRate;
+  this.frame = 0;
+  this.currentObstacles = 0;
+
+  this.resize = function() {
+    this.width = window.innerWidth;
+    this.height = window.innerHeight;
+    this.canvas.width = this.width;
+    this.canvas.height = this.height;
+  };
+
+  this.start = function() {
+    this.resize();
+    document.body.appendChild(this.canvas);
+
+    this.interval = setInterval(this.update, 1000 / this.frameRate);
+
+    window.addEventListener("resize", () => this.resize());
+
+    window.addEventListener('keydown', function(e) {
+      gameArea.keys = (gameArea.keys || []);
+      gameArea.keys[e.keyCode] = true;
+    });
+
+    window.addEventListener('keyup', function(e) {
+      gameArea.keys[e.keyCode] = false;
+    });
+  };
+
+  this.update = () => {
+    if (gameOver) return;
+
+    for (let i = 0; i < obstacles.length; i++) {
+      if (gamePiece.crashWith(obstacles[i])) {
+        gameArea.stop();
+        return;
+      }
+    }
+
+    gameArea.clear();
+    gameArea.frame += 1;
+
+    gameArea.addObstacles();
+
+    for (let i = 0; i < obstacles.length; i++) {
+      obstacles[i].x -= 2;
+      obstacles[i].update();
+    }
+
+    gamePiece.stopMove();
+    gameArea.processInput();
+
+    for (let i = 0; i < obstacles.length; i++) {
+      if (gameArea.currentObstacles == i &&
+          gamePiece.x > obstacles[i].x + obstacles[i].width) {
+        gameArea.currentObstacles += 2;
+        score.number++;
+      }
+    }
+
+    score.text = "SCORE: " + score.number;
+    score.update();
+
+    gamePiece.newPos();
+    gamePiece.update();
+  };
+
+  this.clear = function() {
+    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  };
+
+  this.stop = function() {
+    clearInterval(this.interval);
+    gameOver = true;
+    showGameOver();
+  };
+
+  this.addObstacles = function() {
+    if (gameArea.frame == 1 || gameArea.everyInterval(150)) {
+      let x = gameArea.canvas.width;
+      let minHeight = 20;
+      let maxHeight = gameArea.canvas.height / 2;
+      let height = Math.floor(Math.random() * (maxHeight - minHeight) + minHeight);
+
+      let minGap = 120;
+      let maxGap = 280;
+      let gap = Math.floor(Math.random() * (maxGap - minGap) + minGap);
+
+      obstacles.push(new GamePiece(x, 0, 20, height, 'white'));
+      obstacles.push(new GamePiece(x, height + gap, 20, gameArea.canvas.height - height - gap, 'white'));
+    }
+  };
+
+  this.everyInterval = function(n) {
+    return (gameArea.frame % n === 0);
+  };
+
+  this.processInput = function() {
+    if (gameArea.keys && gameArea.keys[37]) gamePiece.speedX = -3;
+    if (gameArea.keys && gameArea.keys[39]) gamePiece.speedX = 3;
+    if (gameArea.keys && gameArea.keys[38]) gamePiece.speedY = -3;
+    if (gameArea.keys && gameArea.keys[40]) gamePiece.speedY = 3;
+  };
+};
+
+var GamePiece = function(x, y, width, height, color) {
+  this.x = x;
+  this.y = y;
+  this.width = width;
+  this.height = height;
+  this.color = color;
+  this.speedX = 0;
+  this.speedY = 0;
+
+  this.update = function() {
+    let ctx = gameArea.context;
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  };
+
+  this.newPos = function() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+  };
+
+  this.stopMove = function() {
+    this.speedX = 0;
+    this.speedY = 0;
+  };
+
+  this.crashWith = function(object) {
+    var left = this.x;
+    var right = this.x + this.width;
+    var top = this.y;
+    var bottom = this.y + this.height;
+
+    var otherLeft = object.x;
+    var otherRight = object.x + object.width;
+    var otherTop = object.y;
+    var otherBottom = object.y + object.height;
+
+    if (left > otherRight ||
+        right < otherLeft ||
+        top > otherBottom ||
+        bottom < otherTop) {
+      return false;
+    }
+    return true;
+  };
+};
+
+var Score = function(text, x, y, color, font) {
+  this.text = text;
+  this.x = x;
+  this.y = y;
+  this.color = color;
+  this.font = font;
+  this.number = 0;
+
+  this.update = function() {
+    let ctx = gameArea.context;
+    ctx.font = this.font;
+    ctx.fillStyle = this.color;
+    ctx.fillText(this.text, 20, 40);
+  };
+};
+
+startGame();
+
+function startGame() {
+  gameArea = new GameArea(60);
+  gamePiece = new GamePiece(50, 100, 40, 40, 'yellow');
+  score = new Score("SCORE:", 20, 40, "white", "30px Consolas");
+  gameArea.start();
+}
+
+function showGameOver() {
+  const screen = document.getElementById('game-over-screen');
+  if (screen) screen.style.display = 'flex';
+}
+
+function playAgain() {
+  window.location.reload();
+}
+
+function goHome() {
+  window.history.back(); // goes to previous (home) page
+}
+</script>
+
+</body>
+</html>

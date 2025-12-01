@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gaming Hub | TheTMKShow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
+  
+ <style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+  
+  body {
+    font-family: 'Rajdhani', sans-serif;
+  }
+  
+  h1, h2, h3, .game-title {
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  /* Remove scroll hiding */
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: thin;
+  }
+
+  .game-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .game-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(168, 85, 247, 0.4);
+  }
+  
+  .scroll-container {
+    scroll-snap-type: x mandatory;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 12px;
+    scroll-behavior: smooth;
+  }
+  
+  .scroll-item {
+    scroll-snap-align: start;
+  }
+
+  /* ------------------------------ */
+  /* 🌈 FANCY GAMING NEON SCROLLBAR */
+  /* ------------------------------ */
+
+  .scroll-container::-webkit-scrollbar {
+    height: 12px;
+  }
+
+  .scroll-container::-webkit-scrollbar-track {
+    background: rgba(15, 15, 25, 0.7);
+    border-radius: 20px;
+    box-shadow: inset 0 0 8px rgba(168, 85, 247, 0.3);
+  }
+
+  .scroll-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, #a855f7, #ec4899);
+    border-radius: 20px;
+    border: 2px solid rgba(255,255,255,0.25);
+    box-shadow: 0 0 10px #a855f7, 0 0 20px #ec4899;
+    transition: 0.3s ease-in-out;
+  }
+
+  .scroll-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, #c084fc, #f472b6);
+    box-shadow: 0 0 15px #c084fc, 0 0 30px #f472b6;
+  }
+</style>
+
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col">
+
+  <!-- NAVBAR -->
+  <header class="w-full bg-slate-900/95 backdrop-blur-xl border-b-2 border-purple-500/30 sticky top-0 z-50 shadow-xl">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <!-- Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/50">
+          <i class="fas fa-gamepad text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold tracking-wider bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">GAMING HUB</h1>
+          <p class="text-sm text-slate-400 font-medium">Play • Create • Dominate</p>
+        </div>
+      </div>
+
+      <!-- Center Nav -->
+<nav class="hidden md:flex items-center gap-8 text-base font-medium">
+  <a href="/" class="hover:text-purple-400 transition-colors">Home</a>
+  <a href="#games" class="hover:text-purple-400 transition-colors">Games</a>
+  <a href="#assets" class="hover:text-purple-400 transition-colors">Assets</a>
+  <a href="#feedback" class="hover:text-purple-400 transition-colors">Feedback</a>
+
+  <% if (currentUser) { %>
+    <a href="/dashboard" class="hover:text-purple-400 transition-colors">Admin</a>
+  <% } %>
+</nav>
+
+
+
+      <!-- Right Side -->
+      <div class="flex items-center gap-4">
+        <div class="hidden lg:block text-right">
+          <p id="dateTime" class="text-sm font-mono text-purple-400 font-semibold"></p>
+          <p class="text-xs text-slate-500">Local Time</p>
+        </div>
+              <% if (!currentUser) { %>
+          <a
+            href="/login"
+            class="px-5 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-bold hover:shadow-lg hover:shadow-purple-500/50 transition-all inline-block"
+          >
+            Login
+          </a>
+        <% } else { %>
+          <div class="hidden md:flex flex-col text-right mr-2">
+            <span class="text-xs text-slate-400">Logged in as</span>
+            <span class="text-sm font-semibold text-purple-300"><%= currentUser.email %></span>
+          </div>
+          <form action="/logout" method="POST">
+            <button
+              type="submit"
+              class="px-5 py-2 bg-gradient-to-r from-rose-600 to-red-600 rounded-lg font-bold hover:shadow-lg hover:shadow-rose-500/50 transition-all inline-block"
+            >
+              Logout
+            </button>
+          </form>
+        <% } %>
+
+
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 w-full">
+    <div class="max-w-7xl mx-auto px-6 py-10">
+
+      <!-- GAMES SECTION -->
+     <section id="games" class="mb-16">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h2 class="text-4xl font-bold mb-2 flex items-center gap-3">
+        <i class="fas fa-dragon text-purple-500"></i>
+        <span class="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">GAMES</span>
+      </h2>
+      <p class="text-slate-400 text-lg">Choose your battlefield</p>
+    </div>
+    <!-- <button class="px-4 py-2 bg-slate-800 rounded-lg text-sm font-semibold hover:bg-slate-700 transition-colors">
+      View All →
+    </button> -->
+  </div>
+
+  <!-- Games Row 1 -->
+<div class="flex overflow-x-auto scroll-container scroll-x gap-6 pb-4">
+
+  <!-- Game Card 1 -->
+  <a href="/games/galaxy.html">
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-purple-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <!-- TOP IMAGE -->
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/space.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">Space Shooter</h3>
+        <p class="text-slate-400 mb-4 text-base">Epic fighting action with combo moves and special attacks</p>
+        <button class="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-bold text-lg transition-colors">
+          <i class="fas fa-play mr-2"></i>Play Now
+        </button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Game Card 2 -->
+  <a href="/games/blockfly.html" class="block">
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-emerald-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/block.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">BlockFly</h3>
+        <p class="text-slate-400 mb-4 text-base">Fly the block, dodge obstacles, and survive as long as possible!</p>
+        <div class="w-full py-3 bg-emerald-600 rounded-lg font-bold text-lg text-center">
+          <i class="fas fa-play mr-2"></i>Play Now
+        </div>
+      </div>
+    </div>
+  </a>
+
+  <!-- Game Card 3 -->
+  <a href="/games/ghost.html">
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/ghost.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">Hit the Ghost</h3>
+        <p class="text-slate-400 mb-4 text-base">Tap quickly, hit the ghosts, and score before they vanish!</p>
+        <button class="w-full py-3 bg-amber-600 hover:bg-amber-500 rounded-lg font-bold text-lg transition-colors">
+          <i class="fas fa-play mr-2"></i>Play Now
+        </button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Game Card 4 -->
+  <a href="/games/snake.html">
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-blue-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/snake.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">Snake size</h3>
+        <p class="text-slate-400 mb-4 text-base">Eat food, grow longer, and avoid hitting walls or yourself!</p>
+        <button class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold text-lg transition-colors">
+          <i class="fas fa-play mr-2"></i>Play Now
+        </button>
+      </div>
+    </div>
+  </a>
+  <!-- Game Card 9 -->
+  <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-violet-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+    <div class="h-48 bg-cover bg-center relative"
+         style="background-image: url('/images/upcoming.png');">
+      <div class="absolute inset-0 bg-black/40"></div>
+    </div>
+
+    <div class="p-5">
+      <h3 class="game-title text-2xl font-bold mb-2">Upcoming</h3>
+      <p class="text-slate-400 mb-4 text-base">Coming Soon!</p>
+      <button class="w-full py-3 bg-violet-600 hover:bg-violet-500 rounded-lg font-bold text-lg transition-colors">
+        <i class="fas fa-play mr-2"></i>Play Now
+      </button>
+    </div>
+  </div>
+  <!-- Game Card 10 -->
+  <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-violet-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+    <div class="h-48 bg-cover bg-center relative"
+         style="background-image: url('/images/upcoming.png');">
+      <div class="absolute inset-0 bg-black/40"></div>
+    </div>
+
+    <div class="p-5">
+      <h3 class="game-title text-2xl font-bold mb-2">Upcoming</h3>
+      <p class="text-slate-400 mb-4 text-base">Coming Soon!</p>
+      <button class="w-full py-3 bg-violet-600 hover:bg-violet-500 rounded-lg font-bold text-lg transition-colors">
+        <i class="fas fa-play mr-2"></i>Play Now
+      </button>
+    </div>
+  </div>
+
+</div>
+
+
+
+<!-- ROW 2 -->
+<div class="flex overflow-x-auto scroll-container scroll-x gap-6 pb-4 mt-6">
+
+  <!-- Game Card 5 -->
+  <a href="/games/tabletennis.html">
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-rose-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/tabletennis.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">Table Tennis</h3>
+        <p class="text-slate-400 mb-4 text-base">Outsmart your opponent with speed, spin, and precision!</p>
+        <button class="w-full py-3 bg-rose-600 hover:bg-rose-500 rounded-lg font-bold text-lg transition-colors">
+          <i class="fas fa-play mr-2"></i>Play Now
+        </button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Game Card 6 -->
+  <a href="/games/tetris.html">
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-cyan-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/tetris.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">Tetris</h3>
+        <p class="text-slate-400 mb-4 text-base">Arrange falling blocks, complete lines, and keep the grid from filling up!</p>
+        <button class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-bold text-lg transition-colors">
+          <i class="fas fa-play mr-2"></i>Play Now
+        </button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Game Card 7 -->
+   <a href="/games/valentine.html">
+  <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-lime-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+    <div class="h-48 bg-cover bg-center relative"
+         style="background-image: url('/images/valentine.png');">
+      <div class="absolute inset-0 bg-black/40"></div>
+    </div>
+
+    <div class="p-5">
+      <h3 class="game-title text-2xl font-bold mb-2">Valentine</h3>
+      <p class="text-slate-400 mb-4 text-base">Fun Valentine challenge guide love, connect hearts, and feel the joy!</p>
+      <button class="w-full py-3 bg-lime-600 hover:bg-lime-500 rounded-lg font-bold text-lg transition-colors">
+        <i class="fas fa-play mr-2"></i>Play Now
+      </button>
+    </div>
+  </div>
+  </a>
+
+  <!-- Game Card 8 -->
+  <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-violet-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+    <div class="h-48 bg-cover bg-center relative"
+         style="background-image: url('/images/upcoming.png');">
+      <div class="absolute inset-0 bg-black/40"></div>
+    </div>
+
+    <div class="p-5">
+      <h3 class="game-title text-2xl font-bold mb-2">Upcoming</h3>
+      <p class="text-slate-400 mb-4 text-base">Coming Soon!</p>
+      <button class="w-full py-3 bg-violet-600 hover:bg-violet-500 rounded-lg font-bold text-lg transition-colors">
+        <i class="fas fa-play mr-2"></i>Play Now
+      </button>
+    </div>
+  </div>
+  <!-- Game Card 12 -->
+  <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-violet-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+    <div class="h-48 bg-cover bg-center relative"
+         style="background-image: url('/images/upcoming.png');">
+      <div class="absolute inset-0 bg-black/40"></div>
+    </div>
+
+    <div class="p-5">
+      <h3 class="game-title text-2xl font-bold mb-2">Upcoming</h3>
+      <p class="text-slate-400 mb-4 text-base">Coming Soon!</p>
+      <button class="w-full py-3 bg-violet-600 hover:bg-violet-500 rounded-lg font-bold text-lg transition-colors">
+        <i class="fas fa-play mr-2"></i>Play Now
+      </button>
+    </div>
+  </div>
+  <!-- Game Card 11-->
+  <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-violet-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+    <div class="h-48 bg-cover bg-center relative"
+         style="background-image: url('/images/upcoming.png');">
+      <div class="absolute inset-0 bg-black/40"></div>
+    </div>
+
+    <div class="p-5">
+      <h3 class="game-title text-2xl font-bold mb-2">Upcoming</h3>
+      <p class="text-slate-400 mb-4 text-base">Coming Soon!</p>
+      <button class="w-full py-3 bg-violet-600 hover:bg-violet-500 rounded-lg font-bold text-lg transition-colors">
+        <i class="fas fa-play mr-2"></i>Play Now
+      </button>
+    </div>
+  </div>
+  
+
+</div>
+
+</section>
+
+
+      <!-- GAME ASSETS SECTION -->
+<!-- GAME ASSETS SECTION -->
+<section id="assets" class="mb-16">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h2 class="text-4xl font-bold mb-2 flex items-center gap-3">
+        <i class="fas fa-toolbox text-emerald-500"></i>
+        <span class="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+          GAME ASSETS
+        </span>
+      </h2>
+      <p class="text-slate-400 text-lg">Tools for your gaming experience</p>
+    </div>
+  </div>
+
+  <!-- Assets Row 1 -->
+  <div class="flex overflow-x-auto scroll-container scroll-x gap-6 pb-4">
+
+    <!-- CARD TEMPLATE with background image -->
+    <!-- Asset Card 1 -->
+    <a href="/gameAssests/watch.html">
+      <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-blue-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+        <!-- Image Box -->
+        <div class="h-48 bg-cover bg-center relative"
+             style="background-image: url('/images/stopwatch.png');">
+          <div class="absolute inset-0 bg-black/40"></div>
+        </div>
+
+        <div class="p-5">
+          <h3 class="game-title text-2xl font-bold mb-2">Countdown Timer</h3>
+          <p class="text-slate-400 mb-4 text-base">
+            Set custom timers for timed challenges and rounds
+          </p>
+          <button class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold text-lg transition-colors">
+            <i class="fas fa-download mr-2"></i>Use Tool
+          </button>
+        </div>
+      </div>
+    </a>
+
+
+    <!-- Asset Card 2 -->
+    <a href="/gameAssests/dice.html">
+      <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-purple-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+        <div class="h-48 bg-cover bg-center relative"
+             style="background-image: url('/images/dice.png');">
+          <div class="absolute inset-0 bg-black/40"></div>
+        </div>
+
+        <div class="p-5">
+          <h3 class="game-title text-2xl font-bold mb-2">Dice Roller</h3>
+          <p class="text-slate-400 mb-4 text-base">Random dice roller with customizable sides</p>
+          <button class="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-bold text-lg transition-colors">
+            <i class="fas fa-download mr-2"></i>Use Tool
+          </button>
+        </div>
+      </div>
+    </a>
+    <!-- Asset Card 3 -->
+    <a href="/gameAssests/chess.html">
+      <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-blue-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+        <!-- Image Box -->
+        <div class="h-48 bg-cover bg-center relative"
+             style="background-image: url('/images/chesswatch.png');">
+          <div class="absolute inset-0 bg-black/40"></div>
+        </div>
+
+        <div class="p-5">
+          <h3 class="game-title text-2xl font-bold mb-2">Chess Timer</h3>
+          <p class="text-slate-400 mb-4 text-base">
+            A smooth, simple clock for chess players for matches
+          </p>
+          <button class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold text-lg transition-colors">
+            <i class="fas fa-download mr-2"></i>Use Tool
+          </button>
+        </div>
+      </div>
+    </a>
+    <!-- Asset Card 4 -->
+     <a href="/gameAssests/noallocate.html">
+      <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-purple-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+        <div class="h-48 bg-cover bg-center relative"
+             style="background-image: url('/images/noallocate.png');">
+          <div class="absolute inset-0 bg-black/40"></div>
+        </div>
+
+        <div class="p-5">
+          <h3 class="game-title text-2xl font-bold mb-2">Find Your Sequence</h3>
+          <p class="text-slate-400 mb-4 text-base">Random Sequence Generator, which allots a token</p>
+          <P> </P>
+          <button class="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-bold text-lg transition-colors">
+            <i class="fas fa-download mr-2"></i>Use Tool
+          </button>
+        </div>
+      </div>
+    </a>
+
+
+    
+
+
+   
+        <!-- Asset Card 11 -->
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-teal-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/upcoming.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">Upcoming</h3>
+        <p class="text-slate-400 mb-4 text-base">Coming Soon!</p>
+        <button class="w-full py-3 bg-teal-600 hover:bg-teal-500 rounded-lg font-bold text-lg transition-colors">
+          <i class="fas fa-download mr-2"></i>Use Tool
+        </button>
+      </div>
+    </div>
+  
+      <!-- Asset Card 12 -->
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-teal-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/upcoming.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">Upcoming</h3>
+        <p class="text-slate-400 mb-4 text-base">Coming Soon!</p>
+        <button class="w-full py-3 bg-teal-600 hover:bg-teal-500 rounded-lg font-bold text-lg transition-colors">
+          <i class="fas fa-download mr-2"></i>Use Tool
+        </button>
+      </div>
+    </div>
+
+
+  </div>
+
+  <!-- Assets Row 2 -->
+  <div class="flex overflow-x-auto scroll-container scroll-x gap-6 pb-4 mt-6">
+
+    <!-- Asset Card 5 -->
+    <a href="/gameAssests/coinflip.html">
+      <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-rose-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+        <div class="h-48 bg-cover bg-center relative"
+             style="background-image: url('/images/coin.png');">
+          <div class="absolute inset-0 bg-black/40"></div>
+        </div>
+
+        <div class="p-5">
+          <h3 class="game-title text-2xl font-bold mb-2">CoinFlipper</h3>
+          <p class="text-slate-400 mb-4 text-base">Heads/Tails randomizer with animation</p>
+          <button class="w-full py-3 bg-rose-600 hover:bg-rose-500 rounded-lg font-bold text-lg transition-colors">
+            <i class="fas fa-download mr-2"></i>Use Tool
+          </button>
+        </div>
+      </div>
+    </a>
+
+
+    <!-- Asset Card 6 -->
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-cyan-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/upcoming.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">Upcoming</h3>
+        <p class="text-slate-400 mb-4 text-base">Coming Soon!</p>
+        <button class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-bold text-lg transition-colors">
+          <i class="fas fa-download mr-2"></i>Use Tool
+        </button>
+      </div>
+    </div>
+
+
+    <!-- Asset Card 7 -->
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-indigo-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/upcoming.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">Upcoming</h3>
+        <p class="text-slate-400 mb-4 text-base">Coming Soon!</p>
+        <button class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-bold text-lg transition-colors">
+          <i class="fas fa-download mr-2"></i>Use Tool
+        </button>
+      </div>
+    </div>
+
+
+    <!-- Asset Card 8 -->
+    <div class="game-card scroll-item flex-shrink-0 w-80 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-teal-500/20 rounded-2xl overflow-hidden shadow-xl">
+
+      <div class="h-48 bg-cover bg-center relative"
+           style="background-image: url('/images/upcoming.png');">
+        <div class="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div class="p-5">
+        <h3 class="game-title text-2xl font-bold mb-2">Upcoming</h3>
+        <p class="text-slate-400 mb-4 text-base">Coming Soon!</p>
+        <button class="w-full py-3 bg-teal-600 hover:bg-teal-500 rounded-lg font-bold text-lg transition-colors">
+          <i class="fas fa-download mr-2"></i>Use Tool
+        </button>
+      </div>
+    </div>
+  </div>
+     
+  
+</section>
+
+
+
+      <!-- FEEDBACK SECTION -->
+     <form
+  action="<%= formspreeURL %>"
+  method="POST"
+  enctype="multipart/form-data"
+  class="space-y-5"
+>
+  <div>
+        <label class="block text-2xl font-bold mb-2">Feedback Form</label>
+    <label class="block text-lg font-semibold mb-2">Your Email</label>
+    <input
+      type="email"
+      name="email"
+      required
+      class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-base outline-none focus:border-purple-500 transition-colors"
+      placeholder="gamer@email.com"
+    >
+  </div>
+  
+  <div>
+    <label class="block text-lg font-semibold mb-2">Your Message</label>
+    <textarea
+      rows="4"
+      name="message"
+      required
+      class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-base outline-none focus:border-purple-500 transition-colors"
+      placeholder="Share your thoughts..."
+    ></textarea>
+  </div>
+  
+  <div>
+    <label class="block text-lg font-semibold mb-2">Upload File (Optional)</label>
+    <input
+      type="file"
+      name="upload"
+      class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-base"
+    >
+  </div>
+  
+  <button
+    type="submit"
+    class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-bold text-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all"
+  >
+    <i class="fas fa-paper-plane mr-2"></i>Submit Feedback
+  </button>
+</form>
+
+
+      <!-- MAKER INFO -->
+      <section class="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-emerald-500/20 rounded-2xl p-8">
+        <h2 class="text-3xl font-bold mb-4 flex items-center gap-3">
+          <i class="fas fa-user-astronaut text-emerald-500"></i>
+          <span>CREATOR</span>
+        </h2>
+        <p class="text-lg text-slate-300 mb-6">
+          Gaming Hub is created by <span class="font-bold text-emerald-400">TheTMKShow</span>
+        </p>
+        
+        <div class="flex flex-wrap gap-4">
+          <a href="https://portfoliowebsite-mocha-eta.vercel.app/" target="_blank" class="px-6 py-3 bg-slate-950 border border-emerald-500 rounded-lg hover:bg-emerald-500/10 transition-colors text-base font-semibold">
+            <i class="fas fa-globe mr-2"></i>Portfolio
+          </a>
+          <a href="https://www.youtube.com/@The_TMK_Show" target="_blank" class="px-6 py-3 bg-slate-950 border border-red-500 rounded-lg hover:bg-red-500/10 transition-colors text-base font-semibold">
+            <i class="fab fa-youtube mr-2"></i>YouTube
+          </a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="w-full border-t-2 border-purple-500/30 bg-slate-900 mt-12">
+    <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-base">
+      <p>© <span id="yearSpan"></span> Gaming Hub. All rights reserved.</p>
+      <p>Made with 💜 by <span class="font-bold text-purple-400">TheTMKShow</span></p>
+    </div>
+  </footer>
+
+  <script>
+    function updateDateTime() {
+      const now = new Date();
+      const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+      const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+      const dateStr = now.toLocaleDateString('en-GB', dateOptions);
+      const timeStr = now.toLocaleTimeString('en-US', timeOptions);
+      const dateTimeEl = document.getElementById('dateTime');
+      if (dateTimeEl) {
+        dateTimeEl.textContent = dateStr + ' | ' + timeStr;
+      }
+      const yearSpan = document.getElementById('yearSpan');
+      if (yearSpan) {
+        yearSpan.textContent = now.getFullYear();
+      }
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+  </script>
+</body>
+</html>

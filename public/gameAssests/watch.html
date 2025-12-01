@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hacker Stopwatch</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: "Courier New", monospace;
+      background: radial-gradient(circle at top, #0b3d0b 0, #020202 45%, #000 100%);
+      color: #00ff6a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .wrapper {
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid #00ff6a55;
+      box-shadow: 0 0 25px #00ff6a55;
+      border-radius: 14px;
+      padding: 20px 24px 18px;
+      min-width: 280px;
+      max-width: 420px;
+      position: relative;
+    }
+
+    .title {
+      font-size: 1.25rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #aaf5c7;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 0.7rem;
+      color: #00ff6a99;
+      margin-bottom: 18px;
+    }
+
+    .screen {
+      font-size: 2.8rem;
+      letter-spacing: 3px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #00ff6a55;
+      background: #020b05;
+      box-shadow: inset 0 0 12px #00ff6a22;
+      margin-bottom: 14px;
+      position: relative;
+    }
+
+    .screen::after {
+      content: "_";
+      position: absolute;
+      right: 10px;
+      bottom: 6px;
+      color: #00ff6a88;
+      animation: blink 0.7s steps(2, start) infinite;
+      font-size: 1.3rem;
+    }
+
+    .label {
+      font-size: 0.7rem;
+      color: #00ff6a88;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 6px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 1px solid #00ff6a66;
+      background: #021107;
+      color: #00ff6a;
+      font-family: inherit;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s, color 0.15s;
+      min-width: 70px;
+    }
+
+    button:hover {
+      background: #00ff6a22;
+      box-shadow: 0 0 10px #00ff6a55;
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 0 4px #00ff6a55;
+    }
+
+    .btn-home {
+      border-color: #ff4d4daa;
+      color: #ff8080;
+    }
+
+    .btn-home:hover {
+      background: #ff4d4d22;
+      box-shadow: 0 0 10px #ff4d4daa;
+    }
+
+    .hint {
+      font-size: 0.65rem;
+      color: #00ff6a66;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .matrix {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.3;
+      mix-blend-mode: screen;
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      color: #00ff6a;
+      overflow: hidden;
+    }
+
+    .matrix span {
+      position: absolute;
+      animation: fall linear infinite;
+      white-space: pre;
+      opacity: 0.7;
+    }
+
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    @keyframes fall {
+      0% {
+        transform: translateY(-120%);
+      }
+      100% {
+        transform: translateY(120vh);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .screen {
+        font-size: 2.2rem;
+      }
+      .title {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- hacker background -->
+  <div class="matrix" id="matrixLayer"></div>
+
+  <div class="wrapper">
+    <div class="title">[ HACKER STOPWATCH ]</div>
+    <div class="subtitle">SYSTEM ONLINE ▸ TRACKING EXECUTION TIME</div>
+
+    <div class="label">Elapsed Time</div>
+    <div class="screen" id="display">
+      00:00:00.00
+    </div>
+
+    <div class="buttons">
+      <button id="startBtn">Start</button>
+      <button id="stopBtn">Pause</button>
+      <button id="resetBtn">Reset</button>
+<button class="homeBtn" onclick="window.location.href='/'">
+  Go Home
+</button>
+
+    </div>
+
+    <div class="hint">
+      SPACE = Start / Pause &nbsp; • &nbsp; R = Reset
+    </div>
+  </div>
+
+  <script>
+    // --------- Stopwatch Logic ----------
+    let startTime = 0;
+    let elapsed = 0;
+    let intervalId = null;
+    let running = false;
+
+    const display = document.getElementById("display");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn  = document.getElementById("stopBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const homeBtn  = document.getElementById("homeBtn");
+
+    function formatTime(ms) {
+      const totalMs = ms;
+      const totalSeconds = Math.floor(totalMs / 1000);
+      const centiseconds = Math.floor((totalMs % 1000) / 10);
+
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      const h = String(hours).padStart(2, "0");
+      const m = String(minutes).padStart(2, "0");
+      const s = String(seconds).padStart(2, "0");
+      const cs = String(centiseconds).padStart(2, "0");
+
+      return `${h}:${m}:${s}.${cs}`;
+    }
+
+    function updateDisplay() {
+      const now = Date.now();
+      const diff = now - startTime + elapsed;
+      display.textContent = formatTime(diff);
+    }
+
+    function startStopwatch() {
+      if (running) return;
+      running = true;
+      startTime = Date.now();
+      intervalId = setInterval(updateDisplay, 10);
+    }
+
+    function stopStopwatch() {
+      if (!running) return;
+      running = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      // store elapsed so we can continue from here
+      const now = Date.now();
+      elapsed += now - startTime;
+    }
+
+    function resetStopwatch() {
+      running = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      startTime = 0;
+      elapsed = 0;
+      display.textContent = "00:00:00.00";
+    }
+
+    startBtn.addEventListener("click", startStopwatch);
+    stopBtn.addEventListener("click", stopStopwatch);
+    resetBtn.addEventListener("click", resetStopwatch);
+
+    // Home button -> change "index.html" to your real home page
+    homeBtn.addEventListener("click", function () {
+      window.location.href = "index.html";
+    });
+
+    // Keyboard shortcuts: Space = Start/Pause, R = Reset
+    document.addEventListener("keydown", function (e) {
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (running) {
+          stopStopwatch();
+        } else {
+          startStopwatch();
+        }
+      }
+      if (e.key === "r" || e.key === "R") {
+        resetStopwatch();
+      }
+    });
+
+    // --------- Hacker Matrix Background ----------
+    const matrixLayer = document.getElementById("matrixLayer");
+    const chars = "01<>[]{}$#@&%";
+
+    function createStream() {
+      const span = document.createElement("span");
+      span.textContent = generateLine();
+      span.style.left = Math.random() * 100 + "vw";
+      span.style.animationDuration = 4 + Math.random() * 4 + "s";
+      matrixLayer.appendChild(span);
+
+      // remove after some time to avoid infinite DOM growth
+      setTimeout(() => {
+        matrixLayer.removeChild(span);
+      }, 9000);
+    }
+
+    function generateLine() {
+      let line = "";
+      const len = 6 + Math.floor(Math.random() * 12);
+      for (let i = 0; i < len; i++) {
+        line += chars[Math.floor(Math.random() * chars.length)] + "\n";
+      }
+      return line;
+    }
+
+    // create streams periodically
+    setInterval(createStream, 250);
+  </script>
+</body>
+</html>

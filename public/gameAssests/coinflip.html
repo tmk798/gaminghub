@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coin Flip Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111, #000);
+      color: #f1f2f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 500px;
+      background: #050505;
+      border-radius: 18px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      border: 1px solid #333;
+      padding: 18px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #222;
+      padding-bottom: 8px;
+    }
+
+    .title-block h1 {
+      font-size: 22px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #ffd32a;
+    }
+
+    .title-block span {
+      font-size: 11px;
+      color: #b2bec3;
+    }
+
+    .btn {
+      border: none;
+      outline: none;
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: transform 0.08s, box-shadow 0.08s, background 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn.primary {
+      background: #ffd32a;
+      color: #000;
+      font-weight: 600;
+    }
+
+    .btn.secondary {
+      background: #222;
+      color: #f1f2f6;
+    }
+
+    .btn.home {
+      background: #0984e3;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    .btn:hover {
+      filter: brightness(1.1);
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      padding-top: 6px;
+    }
+
+    .coin-wrapper {
+      perspective: 1000px;
+      margin-top: 4px;
+    }
+
+    .coin {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.8s ease-out;
+      margin: auto;
+    }
+
+    .coin-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 28px;
+      backface-visibility: hidden;
+      border: 4px solid #fbc531;
+      box-shadow: 0 0 20px rgba(255, 211, 42, 0.5), inset 0 0 12px rgba(0,0,0,0.4);
+    }
+
+    .coin-face.heads {
+      background: radial-gradient(circle at 30% 30%, #ffeaa7, #fbc531, #e1b12c);
+      color: #000;
+    }
+
+    .coin-face.tails {
+      background: radial-gradient(circle at 30% 30%, #ffeaa7, #f39c12, #d35400);
+      color: #000;
+      transform: rotateY(180deg);
+    }
+
+    .coin.flipping {
+      animation: flipAnim 0.9s ease-out;
+    }
+
+    @keyframes flipAnim {
+      0%   { transform: rotateY(0deg)   translateY(0px); }
+      25%  { transform: rotateY(180deg) translateY(-10px); }
+      50%  { transform: rotateY(360deg) translateY(0px); }
+      75%  { transform: rotateY(540deg) translateY(-10px); }
+      100% { transform: rotateY(720deg) translateY(0px); }
+    }
+
+    .result-text {
+      font-size: 18px;
+      margin-top: 6px;
+      min-height: 22px;
+    }
+
+    .result-text span {
+      font-weight: 700;
+      color: #ffd32a;
+    }
+
+    .message {
+      font-size: 12px;
+      color: #00ff9d;
+      min-height: 16px;
+      margin-top: 2px;
+    }
+
+    .buttons-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 4px;
+    }
+
+    .instructions-block {
+      border-top: 1px solid #222;
+      padding-top: 8px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: #b2bec3;
+    }
+
+    .instructions-title {
+      font-weight: 600;
+      color: #f1f2f6;
+      margin-bottom: 4px;
+    }
+
+    .instructions-block ul {
+      padding-left: 16px;
+    }
+
+    .instructions-block li {
+      margin-bottom: 2px;
+    }
+
+    @media (max-width: 480px) {
+      .title-block h1 {
+        font-size: 18px;
+      }
+      .coin {
+        width: 130px;
+        height: 130px;
+      }
+      .coin-face {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="title-block">
+        <h1>Coin Flip</h1>
+        <span>Use this to decide who starts, who serves, etc.</span>
+      </div>
+<button class="homeBtn" onclick="window.location.href='/'">
+  Go Home
+</button>
+
+    </div>
+
+    <div class="main">
+      <div class="coin-wrapper">
+        <div class="coin" id="coin">
+          <div class="coin-face heads">HEADS</div>
+          <div class="coin-face tails">TAILS</div>
+        </div>
+      </div>
+
+      <div class="result-text" id="resultText">
+        Click <span>Flip</span> to toss the coin.
+      </div>
+
+      <div class="message" id="message"></div>
+
+      <div class="buttons-row">
+        <button class="btn primary" id="flipBtn">Flip</button>
+        <button class="btn secondary" id="retossBtn" disabled>Re-toss</button>
+        <button class="btn secondary" id="resetBtn">Reset</button>
+      </div>
+
+      <div class="instructions-block">
+        <div class="instructions-title">How to use:</div>
+        <ul>
+          <li>Click <b>Flip</b> to toss the coin and get <b>Heads</b> or <b>Tails</b>.</li>
+          <li>Use the result to decide who plays first or who serves.</li>
+          <li>Click <b>Re-toss</b> to flip again with a new random result.</li>
+          <li>Click <b>Reset</b> to clear the result and show a fresh coin.</li>
+          <li>Click <b>Back to Home</b> to go back to your main games page (set link in JS).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const coin       = document.getElementById("coin");
+    const resultText = document.getElementById("resultText");
+    const messageEl  = document.getElementById("message");
+    const flipBtn    = document.getElementById("flipBtn");
+    const retossBtn  = document.getElementById("retossBtn");
+    const resetBtn   = document.getElementById("resetBtn");
+    const homeBtn    = document.getElementById("homeBtn");
+
+    let lastResult = null;
+    let isFlipping = false;
+
+    function setCoinSide(side) {
+      // side: "heads" or "tails"
+      if (side === "heads") {
+        coin.style.transform = "rotateY(0deg)";
+      } else {
+        coin.style.transform = "rotateY(180deg)";
+      }
+    }
+
+    function flipCoin() {
+      if (isFlipping) return;
+      isFlipping = true;
+      messageEl.textContent = "Flipping...";
+      resultText.innerHTML = "Coin is in the air...";
+
+      // Random result
+      const random = Math.random();
+      const result = random < 0.5 ? "heads" : "tails";
+
+      // Add flip animation
+      coin.classList.add("flipping");
+
+      // After animation, set final side
+      setTimeout(() => {
+        coin.classList.remove("flipping");
+        setCoinSide(result);
+
+        const text = result === "heads" ? "HEADS" : "TAILS";
+        resultText.innerHTML = `Result: <span>${text}</span>`;
+        messageEl.textContent = "Use this result to decide turn order.";
+
+        lastResult = result;
+        retossBtn.disabled = false;
+        isFlipping = false;
+      }, 900);
+    }
+
+    flipBtn.addEventListener("click", flipCoin);
+
+    retossBtn.addEventListener("click", () => {
+      flipCoin();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      if (isFlipping) return;
+      lastResult = null;
+      setCoinSide("heads");
+      resultText.innerHTML = 'Click <span>Flip</span> to toss the coin.';
+      messageEl.textContent = "Result cleared.";
+      retossBtn.disabled = true;
+    });
+
+    homeBtn.addEventListener("click", () => {
+      // Change this URL to your real home page:
+      // window.location.href = "index.html";
+      messageEl.textContent = "Set your home page link inside the JS (homeBtn click handler).";
+    });
+
+    // Initial state
+    setCoinSide("heads");
+  </script>
+</body>
+</html>

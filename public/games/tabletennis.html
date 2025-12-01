@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Table Tennis</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f06d06;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 3vw;
+      margin-bottom: 10px;
+    }
+
+    .game-wrapper {
+      background: #111;
+      padding: 10px 12px 15px;
+      border-radius: 12px;
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      color: #f1f2f6;
+      font-size: 14px;
+      gap: 8px;
+    }
+
+    .score {
+      font-weight: 700;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    button {
+      border: none;
+      outline: none;
+      font: inherit;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      background: #f06d06;
+      color: white;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .home-btn {
+      background: #ff4757;
+    }
+
+    canvas {
+      background: black;
+      display: block;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 700px) {
+      h1 {
+        font-size: 6vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Table Tennis</h1>
+
+  <div class="game-wrapper">
+    <div class="hud">
+      <div class="score">
+        Player: <span id="playerScore">0</span> &nbsp; | &nbsp;
+        AI: <span id="aiScore">0</span>
+      </div>
+      <div class="buttons">
+        <button id="startBtn">Start</button>
+        <button id="stopBtn">Stop</button>
+        <!-- GO HOME BUTTON -->
+<button class="homeBtn" onclick="window.location.href='/'">
+  Go Home
+</button>
+
+      </div>
+    </div>
+    <canvas id="game" width="640" height="480"></canvas>
+  </div>
+
+  <script>
+    var canvas = document.getElementById("game");
+    var ctx = canvas.getContext("2d");
+
+    // Paddle constructor
+    function Paddle(x, y, width, height) {
+      this.x = x;
+      this.y = y;
+      this.width = width;
+      this.height = height;
+      this.speedModifier = 0;
+
+      this.hasCollidedWith = function(ball) {
+        var paddleLeftWall = this.x;
+        var paddleRightWall = this.x + this.width;
+        var paddleTopWall = this.y;
+        var paddleBottomWall = this.y + this.height;
+
+        if (
+          ball.x > paddleLeftWall &&
+          ball.x < paddleRightWall &&
+          ball.y > paddleTopWall &&
+          ball.y < paddleBottomWall
+        ) {
+          return true;
+        }
+        return false;
+      };
+
+      this.move = function(keyCode) {
+        var nextY = this.y;
+
+        if (keyCode == 40) { // down
+          nextY += 5;
+          this.speedModifier = 1.5;
+        } else if (keyCode == 38) { // up
+          nextY -= 5;
+          this.speedModifier = 1.5;
+        } else {
+          this.speedModifier = 0;
+        }
+
+        // Limit paddle inside canvas
+        if (nextY < 0) nextY = 0;
+        if (nextY + this.height > canvas.height) nextY = canvas.height - this.height;
+
+        this.y = nextY;
+      };
+    }
+
+    var player = new Paddle(5, 200, 25, 100);
+    var ai     = new Paddle(610, 200, 25, 100);
+
+    var ball = {
+      x: 320,
+      y: 240,
+      radius: 7,
+      xSpeed: 2,
+      ySpeed: 0,
+
+      reverseX: function() {
+        this.xSpeed *= -1;
+      },
+      reverseY: function() {
+        this.ySpeed *= -1;
+      },
+      reset: function(direction) {
+        this.x = 320;
+        this.y = 240;
+        this.xSpeed = direction * 2; // send towards scorer
+        this.ySpeed = 0;
+      },
+      isBouncing: function() {
+        return this.ySpeed != 0;
+      },
+      modifyXSpeedBy: function(modification) {
+        modification = this.xSpeed < 0 ? modification * -1 : modification;
+        var nextValue = this.xSpeed + modification;
+        if (Math.abs(nextValue) > 9) {
+          nextValue = (nextValue < 0 ? -1 : 1) * 9;
+        }
+        this.xSpeed = nextValue;
+      },
+      modifyYSpeedBy: function(modification) {
+        modification = this.ySpeed < 0 ? modification * -1 : modification;
+        this.ySpeed += modification;
+      }
+    };
+
+    var heldDown = {};
+    var running = false;
+    var playerScore = 0;
+    var aiScore = 0;
+
+    var playerScoreEl = document.getElementById("playerScore");
+    var aiScoreEl = document.getElementById("aiScore");
+    var startBtn = document.getElementById("startBtn");
+    var stopBtn = document.getElementById("stopBtn");
+    var homeBtn = document.getElementById("homeBtn");
+
+    function updateGame() {
+      // move ball
+      ball.x += ball.xSpeed;
+      ball.y += ball.ySpeed;
+
+      // left or right wall = score
+      if (ball.x < 0) {
+        // AI scores
+        aiScore++;
+        aiScoreEl.textContent = aiScore;
+        ball.reset(1); // send ball towards AI
+      }
+      if (ball.x > canvas.width) {
+        // Player scores
+        playerScore++;
+        playerScoreEl.textContent = playerScore;
+        ball.reset(-1); // send ball towards player
+      }
+
+      // top and bottom walls = bounce
+      if (ball.y <= 0 || ball.y >= canvas.height) {
+        ball.reverseY();
+      }
+
+      // paddle collisions
+      var collidedWithPlayer = player.hasCollidedWith(ball);
+      var collidedWithAi = ai.hasCollidedWith(ball);
+
+      if (collidedWithPlayer || collidedWithAi) {
+        ball.reverseX();
+        ball.modifyXSpeedBy(0.25);
+
+        var speedUpValue = collidedWithPlayer ? player.speedModifier : ai.speedModifier;
+        ball.modifyYSpeedBy(speedUpValue);
+      }
+
+      // player movement from keys
+      for (var keyCode in heldDown) {
+        player.move(Number(keyCode));
+      }
+
+      // simple AI: follow the ball
+      var aiMiddle = ai.y + ai.height / 2;
+      if (aiMiddle < ball.y) {
+        ai.move(40); // down
+      } else if (aiMiddle > ball.y) {
+        ai.move(38); // up
+      }
+    }
+
+    function draw() {
+      // clear background
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // middle net
+      ctx.strokeStyle = "white";
+      ctx.setLineDash([5, 10]);
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // paddles
+      renderPaddle(player);
+      renderPaddle(ai);
+
+      // ball
+      renderBall(ball);
+    }
+
+    function renderPaddle(p) {
+      ctx.fillStyle = "blue";
+      ctx.fillRect(p.x, p.y, p.width, p.height);
+    }
+
+    function renderBall(b) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2, false);
+      ctx.fillStyle = "pink";
+      ctx.fill();
+    }
+
+    function gameLoop() {
+      if (!running) return;
+      updateGame();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // keyboard controls
+    window.addEventListener("keydown", function (e) {
+      heldDown[e.keyCode] = true;
+    }, false);
+
+    window.addEventListener("keyup", function (e) {
+      delete heldDown[e.keyCode];
+    }, false);
+
+    // buttons
+    startBtn.addEventListener("click", function () {
+      if (!running) {
+        running = true;
+        requestAnimationFrame(gameLoop);
+      }
+    });
+
+    stopBtn.addEventListener("click", function () {
+      running = false;
+    });
+
+    // HOME BUTTON
+    homeBtn.addEventListener("click", function () {
+      // change this URL to your actual home page
+      window.location.href = "index.html";
+    });
+
+    // initial draw (paused)
+    draw();
+  </script>
+</body>
+</html>

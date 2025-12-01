@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ghost Bustin'</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #3c6382 0%, #0b0b0b 40%, #000 100%);
+      font-family: "Lato", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .game-wrapper {
+      width: min(90vmin, 520px);
+      height: min(90vmin, 520px);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* HUD */
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.7rem 1rem;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 0.75rem;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      font-size: 0.9rem;
+    }
+
+    .hud span.label {
+      opacity: 0.7;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .hud span.value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-left: 0.35rem;
+    }
+
+    .hud-center {
+      font-size: 1.1rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+
+    /* Ground / play area */
+    .ground {
+      flex: 1;
+      margin-top: 0.75rem;
+      background: linear-gradient(#145a32 0%, #0b3a1f 55%, #040404 100%);
+      border-radius: 1.25rem;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+      padding: 1.3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      gap: 1.1rem;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hole {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      overflow: visible;
+    }
+
+    .hole-ground {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 25%;
+      background: radial-gradient(ellipse at center, #3c3c3c 0%, #151515 55%, #000 100%);
+      border-radius: 50%;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.8);
+      z-index: 1;
+    }
+
+    /* GHOST – hidden by default, only visible when .up */
+    .ghost {
+      position: relative;
+      width: 55%;
+      max-width: 90px;
+      transform: translateY(130%);        /* push down inside hole */
+      opacity: 0;                          /* invisible */
+      transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+      cursor: pointer;
+      z-index: 2;
+      pointer-events: none;                /* cannot click when hidden */
+      will-change: transform, opacity;
+    }
+
+    .ghost svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.8));
+    }
+
+    .ghost.up {
+      transform: translateY(0%);           /* pop up */
+      opacity: 1;                          /* visible */
+      pointer-events: auto;                /* now clickable */
+      animation: bob 1s ease-in-out infinite;
+    }
+
+    /* SVG inside */
+    .ghost__path {
+      fill: #ffffff;
+    }
+
+    .ghost__mouth {
+      fill: #ffb6c1;
+    }
+
+    .ghost__eyes {
+      fill: #000;
+    }
+
+    .ghost__eyes--busted {
+      display: none;
+      fill: #000;
+    }
+
+    /* Ghost busted animation */
+    .ghost.busted {
+      animation: busted 0.4s forwards;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .ghost.busted .ghost__eyes {
+      display: none;
+    }
+
+    .ghost.busted .ghost__eyes--busted {
+      display: inline;
+    }
+
+    /* Title screen / overlay */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      background: radial-gradient(circle at top, #1a2a3a 0%, #050608 60%, #000 100%);
+      z-index: 20;
+      text-align: center;
+      padding: 1.5rem;
+    }
+
+    .screen h1 {
+      font-size: clamp(2.4rem, 6vw, 3.4rem);
+      margin-bottom: 0.5rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    .screen h1 span {
+      display: block;
+      font-size: 0.55em;
+      letter-spacing: 8px;
+      opacity: 0.8;
+    }
+
+    .screen p {
+      max-width: 360px;
+      margin: 0.3rem auto 1.4rem;
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+
+    .screen .big-score {
+      font-size: 2.7rem;
+      font-weight: 800;
+      margin-bottom: 0.2rem;
+    }
+
+    .screen-buttons {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 0.5rem;
+    }
+
+    button {
+      border: none;
+      outline: none;
+      font: inherit;
+      padding: 0.65rem 1.3rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.18s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: none !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ffda79, #ff9f1a);
+      color: #3b2500;
+      box-shadow: 0 4px 14px rgba(255, 159, 26, 0.6);
+    }
+
+    .btn-secondary {
+      background: #1e272e;
+      color: #f5f6fa;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #d2dae2;
+    }
+
+    .homeBtn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #f5f6fa;
+    }
+
+    .screen--hidden {
+      display: none;
+    }
+
+    /* Small floating credit ghost bottom-right */
+    .corner-ghost {
+      position: fixed;
+      right: 12px;
+      bottom: 8px;
+      width: 50px;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .corner-ghost svg {
+      width: 100%;
+      height: auto;
+    }
+
+    .corner-ghost .ghost__path {
+      fill: #ffffff;
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0%); }
+      50% { transform: translateY(-12%); }
+    }
+
+    @keyframes busted {
+      0% {
+        transform: translateY(0%) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-140%) scale(0.3);
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hud {
+        padding: 0.6rem 0.7rem;
+        font-size: 0.8rem;
+      }
+      .hud span.value {
+        font-size: 1.1rem;
+      }
+      .ground {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Start Screen -->
+  <div id="startScreen" class="screen">
+    <h1>Ghost <span>Bustin'</span></h1>
+    <p>
+      You get <strong>15 seconds</strong> to bust as many ghosts as you can.
+      Tap them when they pop out of their graves. Ready?
+    </p>
+    <div class="screen-buttons">
+      <button class="btn-primary" id="startBtn">Start</button>
+      <button class="homeBtn" onclick="window.location.href='/'">
+        Go Home
+      </button>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameOverScreen" class="screen screen--hidden">
+    <h1>Time's Up!</h1>
+    <div class="big-score" id="finalScore">0</div>
+    <p>
+      Spooky run, buster. Wanna try one more round or head back?
+    </p>
+    <div class="screen-buttons">
+      <button class="btn-primary" id="playAgainBtn">Try Again</button>
+      <button class="btn-secondary" onclick="window.history.back()">Go Home</button>
+    </div>
+  </div>
+
+  <!-- Main Game -->
+  <div class="game-wrapper">
+    <div class="hud">
+      <div>
+        <span class="label">Score</span>
+        <span class="value" id="scoreText">0</span>
+      </div>
+      <div class="hud-center">
+        Ghost Bustin'
+      </div>
+      <div>
+        <span class="label">Time</span>
+        <span class="value" id="timeText">15</span>
+      </div>
+    </div>
+
+    <div class="ground">
+      <div class="grid" id="grid">
+        <!-- Hole 1 -->
+        <div class="hole">
+          <div class="hole-ground"></div>
+          <div class="ghost">
+            <svg class="ghost__image-body" viewBox="0 0 100 130" preserveAspectRatio="xMinYMin">
+              <g transform="translate(0,-922.36216)">
+                <path class="ghost__path" d="m 87.104126,985.99028 c 3e-6,18.29482 23.310064,51.08502 7.251515,64.80642 -4.508673,3.8525 -10.735588,-6.2194 -16.533188,-5.808 -4.489803,0.3185 -7.636172,5.7797 -12.112396,6.2655 -5.152434,0.559 -9.879869,-4.3961 -15.050164,-4.066 -4.493939,0.2869 -8.076853,5.0762 -12.578149,5.1722 -4.822196,0.1028 -8.903453,-4.2416 -13.677721,-4.9617 -6.489307,-0.9788 -15.1515178,5.9929 -19.6454524,0.9765 -14.2159436,-15.8688 8.0865824,-46.7737 6.6754904,-65.00824 -1.7280703,-22.33068 -1.210964,-29.61106 6.765096,-41.60022 7.976059,-11.98915 18.994883,-19.4046 31.165941,-19.4046 12.171058,0 23.189882,7.41545 31.165941,19.4046 7.97606,11.98916 6.573083,25.92871 6.573087,44.22354 z" />
+                <circle class="ghost__eyes" r="5" cy="961.0423" cx="19.056681"/>
+                <circle class="ghost__eyes" r="5" cy="960.05237" cx="76.471283"/>
+                <path class="ghost__mouth" d="m 79.58852,970.29888 c -5e-6,2.4602 -14.18229,4.45458 -31.677023,4.45458 -17.494733,0 -31.677018,-1.99438 -31.677023,-4.45458 5e-6,-2.4602 14.380271,0.099 31.875004,0.099 17.494733,0 31.479037,-2.55919 31.479042,-0.099 z" />
+                <g class="ghost__eyes--busted" transform="translate(0,0)">
+                  <g>
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                  <g transform="translate(57.414617,-0.98990468)">
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Hole 2 -->
+        <div class="hole">
+          <div class="hole-ground"></div>
+          <div class="ghost">
+            <svg class="ghost__image-body" viewBox="0 0 100 130" preserveAspectRatio="xMinYMin">
+              <g transform="translate(0,-922.36216)">
+                <path class="ghost__path" d="m 87.104126,985.99028 c 3e-6,18.29482 23.310064,51.08502 7.251515,64.80642 -4.508673,3.8525 -10.735588,-6.2194 -16.533188,-5.808 -4.489803,0.3185 -7.636172,5.7797 -12.112396,6.2655 -5.152434,0.559 -9.879869,-4.3961 -15.050164,-4.066 -4.493939,0.2869 -8.076853,5.0762 -12.578149,5.1722 -4.822196,0.1028 -8.903453,-4.2416 -13.677721,-4.9617 -6.489307,-0.9788 -15.1515178,5.9929 -19.6454524,0.9765 -14.2159436,-15.8688 8.0865824,-46.7737 6.6754904,-65.00824 -1.7280703,-22.33068 -1.210964,-29.61106 6.765096,-41.60022 7.976059,-11.98915 18.994883,-19.4046 31.165941,-19.4046 12.171058,0 23.189882,7.41545 31.165941,19.4046 7.97606,11.98916 6.573083,25.92871 6.573087,44.22354 z" />
+                <circle class="ghost__eyes" r="5" cy="961.0423" cx="19.056681"/>
+                <circle class="ghost__eyes" r="5" cy="960.05237" cx="76.471283"/>
+                <path class="ghost__mouth" d="m 79.58852,970.29888 c -5e-6,2.4602 -14.18229,4.45458 -31.677023,4.45458 -17.494733,0 -31.677018,-1.99438 -31.677023,-4.45458 5e-6,-2.4602 14.380271,0.099 31.875004,0.099 17.494733,0 31.479037,-2.55919 31.479042,-0.099 z" />
+                <g class="ghost__eyes--busted" transform="translate(0,0)">
+                  <g>
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                  <g transform="translate(57.414617,-0.98990468)">
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Hole 3 -->
+        <div class="hole">
+          <div class="hole-ground"></div>
+          <div class="ghost">
+            <svg class="ghost__image-body" viewBox="0 0 100 130" preserveAspectRatio="xMinYMin">
+              <g transform="translate(0,-922.36216)">
+                <path class="ghost__path" d="m 87.104126,985.99028 c 3e-6,18.29482 23.310064,51.08502 7.251515,64.80642 -4.508673,3.8525 -10.735588,-6.2194 -16.533188,-5.808 -4.489803,0.3185 -7.636172,5.7797 -12.112396,6.2655 -5.152434,0.559 -9.879869,-4.3961 -15.050164,-4.066 -4.493939,0.2869 -8.076853,5.0762 -12.578149,5.1722 -4.822196,0.1028 -8.903453,-4.2416 -13.677721,-4.9617 -6.489307,-0.9788 -15.1515178,5.9929 -19.6454524,0.9765 -14.2159436,-15.8688 8.0865824,-46.7737 6.6754904,-65.00824 -1.7280703,-22.33068 -1.210964,-29.61106 6.765096,-41.60022 7.976059,-11.98915 18.994883,-19.4046 31.165941,-19.4046 12.171058,0 23.189882,7.41545 31.165941,19.4046 7.97606,11.98916 6.573083,25.92871 6.573087,44.22354 z" />
+                <circle class="ghost__eyes" r="5" cy="961.0423" cx="19.056681"/>
+                <circle class="ghost__eyes" r="5" cy="960.05237" cx="76.471283"/>
+                <path class="ghost__mouth" d="m 79.58852,970.29888 c -5e-6,2.4602 -14.18229,4.45458 -31.677023,4.45458 -17.494733,0 -31.677018,-1.99438 -31.677023,-4.45458 5e-6,-2.4602 14.380271,0.099 31.875004,0.099 17.494733,0 31.479037,-2.55919 31.479042,-0.099 z" />
+                <g class="ghost__eyes--busted" transform="translate(0,0)">
+                  <g>
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                  <g transform="translate(57.414617,-0.98990468)">
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Hole 4 -->
+        <div class="hole">
+          <div class="hole-ground"></div>
+          <div class="ghost">
+            <svg class="ghost__image-body" viewBox="0 0 100 130" preserveAspectRatio="xMinYMin">
+              <g transform="translate(0,-922.36216)">
+                <path class="ghost__path" d="m 87.104126,985.99028 c 3e-6,18.29482 23.310064,51.08502 7.251515,64.80642 -4.508673,3.8525 -10.735588,-6.2194 -16.533188,-5.808 -4.489803,0.3185 -7.636172,5.7797 -12.112396,6.2655 -5.152434,0.559 -9.879869,-4.3961 -15.050164,-4.066 -4.493939,0.2869 -8.076853,5.0762 -12.578149,5.1722 -4.822196,0.1028 -8.903453,-4.2416 -13.677721,-4.9617 -6.489307,-0.9788 -15.1515178,5.9929 -19.6454524,0.9765 -14.2159436,-15.8688 8.0865824,-46.7737 6.6754904,-65.00824 -1.7280703,-22.33068 -1.210964,-29.61106 6.765096,-41.60022 7.976059,-11.98915 18.994883,-19.4046 31.165941,-19.4046 12.171058,0 23.189882,7.41545 31.165941,19.4046 7.97606,11.98916 6.573083,25.92871 6.573087,44.22354 z" />
+                <circle class="ghost__eyes" r="5" cy="961.0423" cx="19.056681"/>
+                <circle class="ghost__eyes" r="5" cy="960.05237" cx="76.471283"/>
+                <path class="ghost__mouth" d="m 79.58852,970.29888 c -5e-6,2.4602 -14.18229,4.45458 -31.677023,4.45458 -17.494733,0 -31.677018,-1.99438 -31.677023,-4.45458 5e-6,-2.4602 14.380271,0.099 31.875004,0.099 17.494733,0 31.479037,-2.55919 31.479042,-0.099 z" />
+                <g class="ghost__eyes--busted" transform="translate(0,0)">
+                  <g>
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                  <g transform="translate(57.414617,-0.98990468)">
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Hole 5 -->
+        <div class="hole">
+          <div class="hole-ground"></div>
+          <div class="ghost">
+            <svg class="ghost__image-body" viewBox="0 0 100 130" preserveAspectRatio="xMinYMin">
+              <g transform="translate(0,-922.36216)">
+                <path class="ghost__path" d="m 87.104126,985.99028 c 3e-6,18.29482 23.310064,51.08502 7.251515,64.80642 -4.508673,3.8525 -10.735588,-6.2194 -16.533188,-5.808 -4.489803,0.3185 -7.636172,5.7797 -12.112396,6.2655 -5.152434,0.559 -9.879869,-4.3961 -15.050164,-4.066 -4.493939,0.2869 -8.076853,5.0762 -12.578149,5.1722 -4.822196,0.1028 -8.903453,-4.2416 -13.677721,-4.9617 -6.489307,-0.9788 -15.1515178,5.9929 -19.6454524,0.9765 -14.2159436,-15.8688 8.0865824,-46.7737 6.6754904,-65.00824 -1.7280703,-22.33068 -1.210964,-29.61106 6.765096,-41.60022 7.976059,-11.98915 18.994883,-19.4046 31.165941,-19.4046 12.171058,0 23.189882,7.41545 31.165941,19.4046 7.97606,11.98916 6.573083,25.92871 6.573087,44.22354 z" />
+                <circle class="ghost__eyes" r="5" cy="961.0423" cx="19.056681"/>
+                <circle class="ghost__eyes" r="5" cy="960.05237" cx="76.471283"/>
+                <path class="ghost__mouth" d="m 79.58852,970.29888 c -5e-6,2.4602 -14.18229,4.45458 -31.677023,4.45458 -17.494733,0 -31.677018,-1.99438 -31.677023,-4.45458 5e-6,-2.4602 14.380271,0.099 31.875004,0.099 17.494733,0 31.479037,-2.55919 31.479042,-0.099 z" />
+                <g class="ghost__eyes--busted" transform="translate(0,0)">
+                  <g>
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                  <g transform="translate(57.414617,-0.98990468)">
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Hole 6 -->
+        <div class="hole">
+          <div class="hole-ground"></div>
+          <div class="ghost">
+            <svg class="ghost__image-body" viewBox="0 0 100 130" preserveAspectRatio="xMinYMin">
+              <g transform="translate(0,-922.36216)">
+                <path class="ghost__path" d="m 87.104126,985.99028 c 3e-6,18.29482 23.310064,51.08502 7.251515,64.80642 -4.508673,3.8525 -10.735588,-6.2194 -16.533188,-5.808 -4.489803,0.3185 -7.636172,5.7797 -12.112396,6.2655 -5.152434,0.559 -9.879869,-4.3961 -15.050164,-4.066 -4.493939,0.2869 -8.076853,5.0762 -12.578149,5.1722 -4.822196,0.1028 -8.903453,-4.2416 -13.677721,-4.9617 -6.489307,-0.9788 -15.1515178,5.9929 -19.6454524,0.9765 -14.2159436,-15.8688 8.0865824,-46.7737 6.6754904,-65.00824 -1.7280703,-22.33068 -1.210964,-29.61106 6.765096,-41.60022 7.976059,-11.98915 18.994883,-19.4046 31.165941,-19.4046 12.171058,0 23.189882,7.41545 31.165941,19.4046 7.97606,11.98916 6.573083,25.92871 6.573087,44.22354 z" />
+                <circle class="ghost__eyes" r="5" cy="961.0423" cx="19.056681"/>
+                <circle class="ghost__eyes" r="5" cy="960.05237" cx="76.471283"/>
+                <path class="ghost__mouth" d="m 79.58852,970.29888 c -5e-6,2.4602 -14.18229,4.45458 -31.677023,4.45458 -17.494733,0 -31.677018,-1.99438 -31.677023,-4.45458 5e-6,-2.4602 14.380271,0.099 31.875004,0.099 17.494733,0 31.479037,-2.55919 31.479042,-0.099 z" />
+                <g class="ghost__eyes--busted" transform="translate(0,0)">
+                  <g>
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                  <g transform="translate(57.414617,-0.98990468)">
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Hole 7 -->
+        <div class="hole">
+          <div class="hole-ground"></div>
+          <div class="ghost">
+            <svg class="ghost__image-body" viewBox="0 0 100 130" preserveAspectRatio="xMinYMin">
+              <g transform="translate(0,-922.36216)">
+                <path class="ghost__path" d="m 87.104126,985.99028 c 3e-6,18.29482 23.310064,51.08502 7.251515,64.80642 -4.508673,3.8525 -10.735588,-6.2194 -16.533188,-5.808 -4.489803,0.3185 -7.636172,5.7797 -12.112396,6.2655 -5.152434,0.559 -9.879869,-4.3961 -15.050164,-4.066 -4.493939,0.2869 -8.076853,5.0762 -12.578149,5.1722 -4.822196,0.1028 -8.903453,-4.2416 -13.677721,-4.9617 -6.489307,-0.9788 -15.1515178,5.9929 -19.6454524,0.9765 -14.2159436,-15.8688 8.0865824,-46.7737 6.6754904,-65.00824 -1.7280703,-22.33068 -1.210964,-29.61106 6.765096,-41.60022 7.976059,-11.98915 18.994883,-19.4046 31.165941,-19.4046 12.171058,0 23.189882,7.41545 31.165941,19.4046 7.97606,11.98916 6.573083,25.92871 6.573087,44.22354 z" />
+                <circle class="ghost__eyes" r="5" cy="961.0423" cx="19.056681"/>
+                <circle class="ghost__eyes" r="5" cy="960.05237" cx="76.471283"/>
+                <path class="ghost__mouth" d="m 79.58852,970.29888 c -5e-6,2.4602 -14.18229,4.45458 -31.677023,4.45458 -17.494733,0 -31.677018,-1.99438 -31.677023,-4.45458 5e-6,-2.4602 14.380271,0.099 31.875004,0.099 17.494733,0 31.479037,-2.55919 31.479042,-0.099 z" />
+                <g class="ghost__eyes--busted" transform="translate(0,0)">
+                  <g>
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                  <g transform="translate(57.414617,-0.98990468)">
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Hole 8 -->
+        <div class="hole">
+          <div class="hole-ground"></div>
+          <div class="ghost">
+            <svg class="ghost__image-body" viewBox="0 0 100 130" preserveAspectRatio="xMinYMin">
+              <g transform="translate(0,-922.36216)">
+                <path class="ghost__path" d="m 87.104126,985.99028 c 3e-6,18.29482 23.310064,51.08502 7.251515,64.80642 -4.508673,3.8525 -10.735588,-6.2194 -16.533188,-5.808 -4.489803,0.3185 -7.636172,5.7797 -12.112396,6.2655 -5.152434,0.559 -9.879869,-4.3961 -15.050164,-4.066 -4.493939,0.2869 -8.076853,5.0762 -12.578149,5.1722 -4.822196,0.1028 -8.903453,-4.2416 -13.677721,-4.9617 -6.489307,-0.9788 -15.1515178,5.9929 -19.6454524,0.9765 -14.2159436,-15.8688 8.0865824,-46.7737 6.6754904,-65.00824 -1.7280703,-22.33068 -1.210964,-29.61106 6.765096,-41.60022 7.976059,-11.98915 18.994883,-19.4046 31.165941,-19.4046 12.171058,0 23.189882,7.41545 31.165941,19.4046 7.97606,11.98916 6.573083,25.92871 6.573087,44.22354 z" />
+                <circle class="ghost__eyes" r="5" cy="961.0423" cx="19.056681"/>
+                <circle class="ghost__eyes" r="5" cy="960.05237" cx="76.471283"/>
+                <path class="ghost__mouth" d="m 79.58852,970.29888 c -5e-6,2.4602 -14.18229,4.45458 -31.677023,4.45458 -17.494733,0 -31.677018,-1.99438 -31.677023,-4.45458 5e-6,-2.4602 14.380271,0.099 31.875004,0.099 17.494733,0 31.479037,-2.55919 31.479042,-0.099 z" />
+                <g class="ghost__eyes--busted" transform="translate(0,0)">
+                  <g>
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                  <g transform="translate(57.414617,-0.98990468)">
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Hole 9 -->
+        <div class="hole">
+          <div class="hole-ground"></div>
+          <div class="ghost">
+            <svg class="ghost__image-body" viewBox="0 0 100 130" preserveAspectRatio="xMinYMin">
+              <g transform="translate(0,-922.36216)">
+                <path class="ghost__path" d="m 87.104126,985.99028 c 3e-6,18.29482 23.310064,51.08502 7.251515,64.80642 -4.508673,3.8525 -10.735588,-6.2194 -16.533188,-5.808 -4.489803,0.3185 -7.636172,5.7797 -12.112396,6.2655 -5.152434,0.559 -9.879869,-4.3961 -15.050164,-4.066 -4.493939,0.2869 -8.076853,5.0762 -12.578149,5.1722 -4.822196,0.1028 -8.903453,-4.2416 -13.677721,-4.9617 -6.489307,-0.9788 -15.1515178,5.9929 -19.6454524,0.9765 -14.2159436,-15.8688 8.0865824,-46.7737 6.6754904,-65.00824 -1.7280703,-22.33068 -1.210964,-29.61106 6.765096,-41.60022 7.976059,-11.98915 18.994883,-19.4046 31.165941,-19.4046 12.171058,0 23.189882,7.41545 31.165941,19.4046 7.97606,11.98916 6.573083,25.92871 6.573087,44.22354 z" />
+                <circle class="ghost__eyes" r="5" cy="961.0423" cx="19.056681"/>
+                <circle class="ghost__eyes" r="5" cy="960.05237" cx="76.471283"/>
+                <path class="ghost__mouth" d="m 79.58852,970.29888 c -5e-6,2.4602 -14.18229,4.45458 -31.677023,4.45458 -17.494733,0 -31.677018,-1.99438 -31.677023,-4.45458 5e-6,-2.4602 14.380271,0.099 31.875004,0.099 17.494733,0 31.479037,-2.55919 31.479042,-0.099 z" />
+                <g class="ghost__eyes--busted" transform="translate(0,0)">
+                  <g>
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                  <g transform="translate(57.414617,-0.98990468)">
+                    <rect width="2" height="15" x="692.03461" y="658.58441"
+                      transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"/>
+                    <rect width="2" height="15" x="665.08441" y="-700.53461"
+                      transform="matrix(-0.70710678,0.70710678,-0.70710678,-0.70710678,0,0)"/>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- extra ghost in corner -->
+  <div class="corner-ghost">
+    <svg viewBox="0 0 100 130" preserveAspectRatio="xMinYMin">
+      <g transform="translate(0,-922.36216)">
+        <path class="ghost__path" d="m 87.104126,985.99028 c 3e-6,18.29482 23.310064,51.08502 7.251515,64.80642 -4.508673,3.8525 -10.735588,-6.2194 -16.533188,-5.808 -4.489803,0.3185 -7.636172,5.7797 -12.112396,6.2655 -5.152434,0.559 -9.879869,-4.3961 -15.050164,-4.066 -4.493939,0.2869 -8.076853,5.0762 -12.578149,5.1722 -4.822196,0.1028 -8.903453,-4.2416 -13.677721,-4.9617 -6.489307,-0.9788 -15.1515178,5.9929 -19.6454524,0.9765 -14.2159436,-15.8688 8.0865824,-46.7737 6.6754904,-65.00824 -1.7280703,-22.33068 -1.210964,-29.61106 6.765096,-41.60022 7.976059,-11.98915 18.994883,-19.4046 31.165941,-19.4046 12.171058,0 23.189882,7.41545 31.165941,19.4046 7.97606,11.98916 6.573083,25.92871 6.573087,44.22354 z" />
+        <circle class="ghost__eyes" r="4.9" cy="957.77557" cx="41.527569"/>
+        <circle class="ghost__eyes" r="8.66" cy="955.00385" cx="64.691391"/>
+        <path class="ghost__mouth" d="m 74.836967,972.6979 c -3e-6,11.63211 -14.670414,22.44764 -25.440609,22.44764 -10.770196,0 -19.303184,-0.71848 -19.303187,-12.35059 3e-6,-11.63211 8.852855,-13.5886 19.62305,-13.5886 10.770195,0 25.120743,-8.14052 25.120746,3.49155 z" />
+      </g>
+    </svg>
+  </div>
+
+  <script>
+    const ghosts = Array.from(document.querySelectorAll('.ghost'));
+    const scoreText = document.getElementById('scoreText');
+    const timeText = document.getElementById('timeText');
+
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const finalScore = document.getElementById('finalScore');
+
+    const startBtn = document.getElementById('startBtn');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+
+    let lastGhost = null;
+    let timeUp = false;
+    let score = 0;
+    let countdownInterval = null;
+
+    function randomTime(min, max) {
+      return Math.round(Math.random() * (max - min) + min);
+    }
+
+    function randomGhost(ghostsArr) {
+      if (ghostsArr.length <= 1) return ghostsArr[0];
+      const idx = Math.floor(Math.random() * ghostsArr.length);
+      const ghost = ghostsArr[idx];
+      if (ghost === lastGhost) {
+        return randomGhost(ghostsArr);
+      }
+      lastGhost = ghost;
+      return ghost;
+    }
+
+    function peep() {
+      if (timeUp) return;
+
+      const time = randomTime(500, 1100);
+      const ghost = randomGhost(ghosts);
+
+      ghost.classList.remove('busted');
+      ghost.classList.add('up');
+
+      setTimeout(() => {
+        ghost.classList.remove('up');
+        if (!timeUp) {
+          peep();
+        }
+      }, time);
+    }
+
+    function startCountdown(durationSeconds) {
+      let timeLeft = durationSeconds;
+      timeText.textContent = timeLeft;
+
+      countdownInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          timeText.textContent = 0;
+          clearInterval(countdownInterval);
+          endGame();
+        } else {
+          timeText.textContent = timeLeft;
+        }
+      }, 1000);
+    }
+
+    function resetGhosts() {
+      ghosts.forEach(g => {
+        g.classList.remove('up', 'busted');
+      });
+    }
+
+    function startGame() {
+      score = 0;
+      scoreText.textContent = score;
+      timeUp = false;
+      lastGhost = null;
+
+      resetGhosts();
+
+      startScreen.classList.add('screen--hidden');
+      gameOverScreen.classList.add('screen--hidden');
+
+      if (countdownInterval) clearInterval(countdownInterval);
+
+      startCountdown(15);
+      peep();
+    }
+
+    function endGame() {
+      timeUp = true;
+      resetGhosts();
+      finalScore.textContent = score;
+      gameOverScreen.classList.remove('screen--hidden');
+    }
+
+    const clickEvent = ('ontouchstart' in window || navigator.maxTouchPoints) ? 'pointerdown' : 'click';
+
+    ghosts.forEach(ghost => {
+      ghost.addEventListener(clickEvent, function () {
+        if (!this.classList.contains('up')) return;
+        if (this.classList.contains('busted')) return;
+        if (timeUp) return;
+
+        score++;
+        scoreText.textContent = score;
+        this.classList.add('busted');
+      });
+    });
+
+    startBtn.addEventListener('click', startGame);
+    playAgainBtn.addEventListener('click', startGame);
+  </script>
+</body>
+</html>

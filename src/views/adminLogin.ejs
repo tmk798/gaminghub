@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-950 min-h-screen flex items-center justify-center text-white">
+
+  <div class="w-full max-w-md bg-slate-900 border border-purple-500/30 rounded-2xl p-8 shadow-xl">
+    
+    <h1 class="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+      Admin Login
+    </h1>
+
+    <% if (error) { %>
+      <p class="text-red-400 text-center mb-4"><%= error %></p>
+    <% } %>
+
+    <form action="/admin-login" method="POST" class="space-y-5">
+
+      <div>
+        <label class="block mb-2 font-semibold">Admin Password</label>
+        <input
+          type="password"
+          name="password"
+          required
+          class="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-purple-500 outline-none"
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 font-bold text-lg hover:opacity-90"
+      >
+        Login
+      </button>
+
+    </form>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Do You Love Me?</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    font-family: 'Georgia', serif;
+    position: relative;
+    transition: background 0.5s ease;
+  }
+
+  /* Mode Toggle Switch */
+  .mode-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 20px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .mode-label {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #666;
+  }
+
+  .switch {
+    position: relative;
+    width: 60px;
+    height: 30px;
+    background: #ff69b4;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  .switch.valentine {
+    background: #ff0055;
+  }
+
+  .slider {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+  }
+
+  .switch.valentine .slider {
+    transform: translateX(30px);
+  }
+
+  /* Valentine Mode Styles */
+  body.valentine-mode {
+    background: linear-gradient(135deg, #ff6b9d 0%, #ffc3d7 50%, #ff85a2 100%);
+  }
+
+  body.valentine-mode::before {
+    content: '💕';
+    position: absolute;
+    font-size: 100px;
+    opacity: 0.1;
+    animation: float 6s ease-in-out infinite;
+    top: 10%;
+    left: 10%;
+  }
+
+  body.valentine-mode::after {
+    content: '💝';
+    position: absolute;
+    font-size: 80px;
+    opacity: 0.1;
+    animation: float 8s ease-in-out infinite;
+    bottom: 10%;
+    right: 15%;
+  }
+
+  /* Love Mode Styles */
+  body.love-mode {
+    background-color: #ffd6e7;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  /* Valentine Mode - Main Heading */
+  .valentine-content h1 {
+    font-size: 3em;
+    color: #ff0055;
+    text-shadow: 0 4px 8px rgba(255, 0, 85, 0.3);
+    animation: pulse 2s ease-in-out infinite;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+
+  /* Love Mode - Main Heading */
+  .love-content h1 {
+    font-size: 2.5em;
+    color: #ff4081;
+    margin-bottom: 40px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .buttons {
+    margin-top: 30px;
+    display: flex;
+    gap: 20px;
+  }
+
+  button {
+    padding: 15px 35px;
+    font-size: 1.3em;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    font-family: 'Georgia', serif;
+  }
+
+  /* Valentine Mode Buttons */
+  .valentine-content #yesBtn {
+    background: linear-gradient(135deg, #ff0055 0%, #ff5599 100%);
+    color: white;
+  }
+
+  .valentine-content #yesBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255, 0, 85, 0.4);
+    background: linear-gradient(135deg, #ff0066 0%, #ff66aa 100%);
+  }
+
+  .valentine-content #noBtn {
+    background: linear-gradient(135deg, #fff 0%, #ffe6f0 100%);
+    color: #ff0055;
+    border: 3px solid #ff0055;
+  }
+
+  .valentine-content #noBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255, 0, 85, 0.3);
+    background: linear-gradient(135deg, #ffe6f0 0%, #ffd6e7 100%);
+  }
+
+  /* Love Mode Buttons */
+  .love-content #yes {
+    background-color: #ff69b4;
+    color: white;
+  }
+
+  .love-content #no {
+    background-color: #fff;
+    color: #ff69b4;
+    border: 2px solid #ff69b4;
+    position: absolute;
+  }
+
+  /* Error Windows (Valentine Mode) */
+  .error-window {
+    position: fixed;
+    width: 350px;
+    min-height: 220px;
+    background: linear-gradient(135deg, #fff0f5 0%, #ffe6f0 100%);
+    border: 4px solid #ff0055;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(255, 0, 85, 0.5);
+    text-align: center;
+    padding: 20px;
+    z-index: 10000;
+    animation: shake 0.25s infinite alternate;
+  }
+
+  .error-title {
+    background: linear-gradient(135deg, #ff0055 0%, #ff5599 100%);
+    color: white;
+    padding: 12px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 1.2em;
+    letter-spacing: 1px;
+  }
+
+  .error-window p {
+    color: #ff0055;
+    font-size: 1.1em;
+    margin: 15px 0;
+    font-weight: 600;
+  }
+
+  .error-window button {
+    margin: 10px 5px;
+    padding: 12px 25px;
+    font-size: 1.1em;
+  }
+
+  .yes-btn {
+    background: linear-gradient(135deg, #ff0055 0%, #ff5599 100%);
+    color: white;
+  }
+
+  .no-btn {
+    background: linear-gradient(135deg, #fff 0%, #ffe6f0 100%);
+    color: #ff0055;
+    border: 3px solid #ff0055;
+  }
+
+  @keyframes shake {
+    from { transform: translate(-50%, -50%) rotate(-1deg); }
+    to { transform: translate(-50%, -50%) rotate(1deg); }
+  }
+
+  /* Success Messages */
+  .love-message {
+    font-size: 3.5em;
+    color: #ff0055;
+    display: none;
+    text-shadow: 0 8px 20px rgba(255, 0, 85, 0.4);
+    animation: bounce 1s ease-in-out infinite;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 3px;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+  }
+
+  /* Hearts and Roses */
+  .heart-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .heart {
+    position: absolute;
+    font-size: 30px;
+    animation: fall 4s linear infinite;
+    opacity: 0;
+  }
+
+  .heart.love-mode-heart {
+    color: #ff3366;
+    font-size: 20px;
+    animation: floatUpDown 3s ease-in-out infinite;
+  }
+
+  @keyframes fall {
+    0% { 
+      top: -10%; 
+      opacity: 0;
+      transform: translateX(0) rotate(0deg);
+    }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { 
+      top: 110%; 
+      opacity: 0;
+      transform: translateX(50px) rotate(360deg);
+    }
+  }
+
+  @keyframes floatUpDown {
+    0% { transform: translateY(0); opacity: 1; }
+    50% { transform: translateY(-40px); opacity: 0.7; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  .rose {
+    position: absolute;
+    animation: rosefall 3s linear forwards;
+    font-size: 24px;
+  }
+
+  @keyframes rosefall {
+    from { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+    to { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+  }
+
+  .content {
+    display: none;
+    text-align: center;
+  }
+
+  .content.active {
+    display: block;
+  }
+</style>
+</head>
+<body class="love-mode">
+
+<!-- Mode Toggle Switch -->
+<div class="mode-toggle">
+  <span class="mode-label">Love</span>
+  <div class="switch" id="modeSwitch">
+    <div class="slider"></div>
+  </div>
+  <span class="mode-label">Valentine</span>
+</div>
+
+<div class="heart-container" id="heartContainer"></div>
+
+<!-- Valentine Mode Content -->
+<div id="valentineContent" class="content valentine-content">
+  <div id="valentineMain">
+    <h1>💝 Will You Be My Valentine? 💝</h1>
+    <div class="buttons">
+      <button id="yesBtn">Yes! 💘</button>
+      <button id="noBtn">No 💔</button>
+    </div>
+  </div>
+  <h1 id="valentineLoveMessage" class="love-message">I knew it! ❤️✨<br>You're My Forever Valentine! 💕</h1>
+</div>
+
+<!-- Love Mode Content -->
+<div id="loveContent" class="content love-content active">
+  <h1 id="loveQuestion">Do you love me? 💖</h1>
+  <div>
+    <button id="yes">Yes</button>
+    <button id="no">No</button>
+  </div>
+</div>
+
+<script>
+// Mode switching
+const modeSwitch = document.getElementById('modeSwitch');
+const body = document.body;
+const valentineContent = document.getElementById('valentineContent');
+const loveContent = document.getElementById('loveContent');
+const heartContainer = document.getElementById('heartContainer');
+
+let currentMode = 'love';
+let valentineHeartInterval;
+let loveHeartInterval;
+
+modeSwitch.addEventListener('click', () => {
+  if (currentMode === 'love') {
+    // Switch to Valentine mode
+    currentMode = 'valentine';
+    body.classList.remove('love-mode');
+    body.classList.add('valentine-mode');
+    modeSwitch.classList.add('valentine');
+    valentineContent.classList.add('active');
+    loveContent.classList.remove('active');
+    
+    // Reset Valentine mode
+    resetValentineMode();
+    
+    // Clear love hearts and start valentine hearts
+    clearInterval(loveHeartInterval);
+    heartContainer.innerHTML = '';
+    valentineHeartInterval = setInterval(createValentineFallingHeart, 300);
+  } else {
+    // Switch to Love mode
+    currentMode = 'love';
+    body.classList.remove('valentine-mode');
+    body.classList.add('love-mode');
+    modeSwitch.classList.remove('valentine');
+    valentineContent.classList.remove('active');
+    loveContent.classList.add('active');
+    
+    // Reset Love mode
+    resetLoveMode();
+    
+    // Clear valentine hearts and start love hearts
+    clearInterval(valentineHeartInterval);
+    heartContainer.innerHTML = '';
+    loveHeartInterval = setInterval(createLoveHeart, 800);
+  }
+});
+
+// ========== VALENTINE MODE ==========
+let openWindows = [];
+let zIndexCounter = 10000;
+let offsetCount = 0;
+
+function createValentineFallingHeart() {
+  const heart = document.createElement('div');
+  heart.classList.add('heart');
+  heart.textContent = ['💕', '💖', '💗', '💓', '💝'][Math.floor(Math.random() * 5)];
+  heart.style.left = Math.random() * 100 + '%';
+  heart.style.animationDuration = (Math.random() * 3 + 3) + 's';
+  heart.style.animationDelay = Math.random() * 2 + 's';
+  heartContainer.appendChild(heart);
+  
+  setTimeout(() => heart.remove(), 6000);
+}
+
+function createErrorWindow() {
+  const errorDiv = document.createElement("div");
+  errorDiv.classList.add("error-window");
+  const offset = offsetCount * 20;
+  errorDiv.style.top = `calc(50% - ${100 - offset}px)`;
+  errorDiv.style.left = `calc(50% - ${150 - offset}px)`;
+  errorDiv.style.zIndex = zIndexCounter++;
+  errorDiv.innerHTML = `
+    <div class="error-title">💔 Love System Alert 💔</div>
+    <p><b>❤️ Do You Love Me? ❤️</b></p>
+    <p>⚠️ Warning: Saying "No" breaks my heart!</p>
+    <p style="font-size: 0.9em; opacity: 0.8;">Please reconsider... 🥺</p>
+    <div>
+      <button class="yes-btn">Yes! 💕</button>
+      <button class="no-btn">No</button>
+    </div>
+  `;
+  document.body.appendChild(errorDiv);
+  openWindows.push(errorDiv);
+  offsetCount++;
+  
+  const yesBtn = errorDiv.querySelector(".yes-btn");
+  const noBtn = errorDiv.querySelector(".no-btn");
+  
+  yesBtn.addEventListener("click", () => {
+    openWindows.forEach(win => win.remove());
+    openWindows = [];
+    offsetCount = 0;
+    document.getElementById("valentineMain").style.display = "none";
+    document.getElementById("valentineLoveMessage").style.display = "block";
+  });
+  
+  noBtn.addEventListener("click", () => {
+    createErrorWindow();
+  });
+}
+
+function resetValentineMode() {
+  openWindows.forEach(win => win.remove());
+  openWindows = [];
+  offsetCount = 0;
+  document.getElementById("valentineMain").style.display = "block";
+  document.getElementById("valentineLoveMessage").style.display = "none";
+}
+
+document.getElementById("noBtn").addEventListener("click", createErrorWindow);
+document.getElementById("yesBtn").addEventListener("click", () => {
+  document.getElementById("valentineMain").style.display = "none";
+  document.getElementById("valentineLoveMessage").style.display = "block";
+});
+
+// ========== LOVE MODE ==========
+function createLoveHeart() {
+  const heart = document.createElement("div");
+  heart.classList.add("heart", "love-mode-heart");
+  heart.innerHTML = "💖";
+  heart.style.left = Math.random() * window.innerWidth + "px";
+  heart.style.top = Math.random() * window.innerHeight + "px";
+  heartContainer.appendChild(heart);
+  setTimeout(() => heart.remove(), 3000);
+}
+
+const noBtn = document.getElementById("no");
+noBtn.addEventListener("mouseover", () => {
+  const x = Math.random() * (window.innerWidth - noBtn.clientWidth);
+  const y = Math.random() * (window.innerHeight - noBtn.clientHeight);
+  noBtn.style.left = `${x}px`;
+  noBtn.style.top = `${y}px`;
+});
+
+const yesBtn = document.getElementById("yes");
+yesBtn.addEventListener("click", () => {
+  for (let i = 0; i < 40; i++) {
+    const rose = document.createElement("div");
+    rose.classList.add("rose");
+    rose.innerHTML = Math.random() > 0.5 ? "🌹" : "💖";
+    rose.style.left = Math.random() * window.innerWidth + "px";
+    rose.style.animationDuration = 2 + Math.random() * 3 + "s";
+    heartContainer.appendChild(rose);
+    setTimeout(() => rose.remove(), 5000);
+  }
+  document.getElementById("loveQuestion").innerText = "Aww! I love you too! 💞";
+});
+
+function resetLoveMode() {
+  document.getElementById("loveQuestion").innerText = "Do you love me? 💖";
+  noBtn.style.position = "absolute";
+  noBtn.style.left = "";
+  noBtn.style.top = "";
+}
+
+// Start with love mode hearts
+loveHeartInterval = setInterval(createLoveHeart, 800);
+</script>
+<!-- Return Home Button -->
+<a href="/" 
+   style="
+     position: fixed;
+     bottom: 60px;
+     left: 50%;
+     transform: translateX(-50%);
+     padding: 12px 28px;
+     background: #ff69b4;
+     color: white;
+     font-family: 'Georgia', serif;
+     font-size: 1.1em;
+     border-radius: 40px;
+     text-decoration: none;
+     box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+     transition: 0.3s;
+     font-weight: bold;
+     z-index: 99999;
+   "
+   onmouseover="this.style.transform='translateX(-50%) scale(1.05)'"
+   onmouseout="this.style.transform='translateX(-50%) scale(1)'">
+   ⬅ Home
+</a>
+
+ <footer style="position: fixed; bottom: 10px; width: 100%; text-align: center; font-family: 'Georgia', serif; font-size: 0.9em; color: #555;">
+  © All rights reserved to <b>The TMK Show</b>
+</footer>
+
+</body>
+</html>

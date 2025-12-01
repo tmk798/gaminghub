@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Space Shooter</title>
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; }
+    body {
+      background:black;
+      color:white;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family: system-ui, Arial;
+    }
+
+    h1 {
+      text-align:center;
+      color:#7fd4ff;
+      margin-bottom:10px;
+      font-size:32px;
+      letter-spacing:3px;
+      text-transform:uppercase;
+    }
+
+    #wrapper {
+      width:100%;
+      max-width:960px;
+      padding:10px;
+    }
+
+    #gameContainer {
+      position:relative;
+      width:100%;
+      height:530px;
+      background:black;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 0 25px rgba(0,0,0,0.9);
+      cursor:none;
+    }
+
+    #gameCanvas {
+      width:100%;
+      height:100%;
+      background:url("http://cloud-3.steamusercontent.com/ugc/720918725566294424/FCD5ECFE932139A7886585ECCBCA6586C6FF6E4A/")
+      no-repeat center center;
+      background-size:cover;
+      display:block;
+    }
+
+    #hud {
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height:45px;
+      background:rgba(0,0,0,0.8);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:0 12px;
+      font-size:15px;
+    }
+
+    #score { color:#aaf0ff; font-weight:bold; }
+
+    .overlay {
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,0.85);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      opacity:1;
+      visibility:visible;
+      transition:0.3s;
+      z-index:10;
+    }
+
+    .overlay.hide {
+      opacity:0;
+      visibility:hidden;
+    }
+
+    .panel {
+      background:#0c111b;
+      border-radius:12px;
+      padding:20px 25px;
+      width:90%;
+      max-width:450px;
+      text-align:left;
+      box-shadow:0 0 20px rgba(0,0,0,0.8);
+    }
+
+    .panel h2 {
+      color:#7fd4ff;
+      margin-bottom:10px;
+    }
+
+    .panel p { margin-bottom:8px; }
+
+    .panel ul { margin-left:20px; margin-bottom:10px; }
+
+    .panel button {
+      padding:8px 14px;
+      border:none;
+      cursor:pointer;
+      border-radius:50px;
+      font-weight:bold;
+      text-transform:uppercase;
+      background:#00b894;
+      color:black;
+      font-size:14px;
+    }
+
+    .panel button:active {
+      transform:scale(0.96);
+    }
+
+    .homeBtn {
+      background:#ff7675 !important;
+      color:white !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="wrapper">
+    <h1>Space Shooter</h1>
+
+    <div id="gameContainer">
+      <canvas id="gameCanvas"></canvas>
+
+      <div id="hud">
+        <div id="score">Hits: 0</div>
+        <div id="info">Press SPACE or TAP to shoot</div>
+      </div>
+
+      <!-- Overlay -->
+      <div id="overlay" class="overlay">
+        <div class="panel">
+          <h2 id="overlayTitle">How to Play</h2>
+          <p>Defend your spaceship from incoming asteroids.</p>
+          <ul>
+            <li><b>Keyboard:</b> ↑ ↓ to move, SPACE to shoot</li>
+            <li><b>Mouse / Touch:</b> drag to move, tap to shoot</li>
+            <li><b>ENTER or TAP</b> to start game</li>
+          </ul>
+
+          <p id="overlayResult" style="color:#ffeaa7; font-weight:600;"></p>
+
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button id="startBtn">Start Game</button>
+
+            <!-- GO HOME BUTTON -->
+           <button class="homeBtn" onclick="window.location.href='/'">
+  Go Home
+</button>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GAME SCRIPT -->
+  <script>
+    const container = document.getElementById("gameContainer");
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const scoreEl = document.getElementById("score");
+    const infoEl = document.getElementById("info");
+
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlayTitle");
+    const overlayResult = document.getElementById("overlayResult");
+    const startBtn = document.getElementById("startBtn");
+
+    function resizeCanvas() {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    const shipImg = new Image();
+    shipImg.src =
+      "http://vignette1.wikia.nocookie.net/thedimensionsaga/images/f/f0/Spiff's_spacecraft.png/revision/latest?cb=20130716184758";
+
+    const asteroidImg = new Image();
+    asteroidImg.src =
+      "http://www.asteroidmission.org/wp-content/themes/osiris/public_assets/images/bennu-rendered.png";
+
+    let ship = { x: 100, y: 200, w: 60, h: 60, speed: 7 };
+    let bullets = [];
+    let asteroids = [];
+    let hits = 0;
+    let running = false;
+    let lastSpawn = 0;
+
+    const keys = {};
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(value, max));
+    }
+
+    function spawnAsteroid() {
+      const y = Math.random() * (canvas.height - 60);
+      const speedList = [2, 3, 4, 5, 6, 7, 9, 11];
+      const sp = speedList[Math.floor(Math.random() * speedList.length)];
+      asteroids.push({ x: canvas.width + 40, y, w: 40, h: 40, speedX: sp });
+    }
+
+    function shoot() {
+      if (!running) {
+        startGame();
+        return;
+      }
+
+      bullets.push({
+        x: ship.x + ship.w,
+        y: ship.y + ship.h / 2,
+        r: 6,
+        speedX: 14
+      });
+    }
+
+    function reset() {
+      bullets = [];
+      asteroids = [];
+      hits = 0;
+      scoreEl.textContent = "Hits: 0";
+      ship.y = canvas.height / 2 - ship.h / 2;
+    }
+
+    function startGame() {
+      reset();
+      running = true;
+      overlay.classList.add("hide");
+      overlayResult.textContent = "";
+    }
+
+    function gameOver() {
+      running = false;
+      overlay.classList.remove("hide");
+      overlayTitle.textContent = "Game Over";
+      overlayResult.textContent = "Total Hits: " + hits;
+      startBtn.textContent = "Play Again";
+      infoEl.textContent = "Press ENTER or TAP to restart";
+    }
+
+    window.addEventListener("keydown", (e) => {
+      keys[e.code] = true;
+      if (e.code === "Space") shoot();
+      if (e.code === "Enter" && !running) startGame();
+    });
+
+    window.addEventListener("keyup", (e) => {
+      delete keys[e.code];
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      ship.y = clamp(e.clientY - rect.top - ship.h / 2, 0, canvas.height - ship.h);
+    });
+
+    canvas.addEventListener("click", shoot);
+
+    canvas.addEventListener("touchstart", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches[0];
+      ship.y = clamp(t.clientY - rect.top - ship.h / 2, 0, canvas.height - ship.h);
+      shoot();
+    });
+
+    canvas.addEventListener("touchmove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches[0];
+      ship.y = clamp(t.clientY - rect.top - ship.h / 2, 0, canvas.height - ship.h);
+      e.preventDefault();
+    }, { passive: false });
+
+    startBtn.addEventListener("click", startGame);
+
+    function rectOverlap(a, b) {
+      return !(
+        a.x + a.w < b.x ||
+        a.x > b.x + b.w ||
+        a.y + a.h < b.y ||
+        a.y > b.y + b.h
+      );
+    }
+
+    let lastTime = 0;
+
+    function loop(timestamp) {
+      const dt = timestamp - lastTime;
+      lastTime = timestamp;
+
+      if (running) update(dt);
+      draw();
+
+      requestAnimationFrame(loop);
+    }
+
+    function update(dt) {
+      if (keys["ArrowUp"]) ship.y -= ship.speed;
+      if (keys["ArrowDown"]) ship.y += ship.speed;
+      ship.y = clamp(ship.y, 0, canvas.height - ship.h);
+
+      bullets.forEach((b) => (b.x += b.speedX));
+      bullets = bullets.filter((b) => b.x - b.r < canvas.width);
+
+      asteroids.forEach((a) => (a.x -= a.speedX));
+      asteroids = asteroids.filter((a) => a.x + a.w > 0);
+
+      if (performance.now() - lastSpawn > Math.max(300, 800 - hits * 20)) {
+        spawnAsteroid();
+        lastSpawn = performance.now();
+      }
+
+      const shipRect = { x: ship.x, y: ship.y, w: ship.w, h: ship.h };
+
+      for (const a of asteroids) {
+        const aRect = { x: a.x, y: a.y, w: a.w, h: a.h };
+        if (rectOverlap(shipRect, aRect)) {
+          gameOver();
+          return;
+        }
+      }
+
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        const bRect = { x: b.x - b.r, y: b.y - b.r, w: b.r * 2, h: b.r * 2 };
+
+        for (let j = asteroids.length - 1; j >= 0; j--) {
+          const a = asteroids[j];
+          const aRect = { x: a.x, y: a.y, w: a.w, h: a.h };
+          if (rectOverlap(bRect, aRect)) {
+            bullets.splice(i, 1);
+            asteroids.splice(j, 1);
+            hits++;
+            scoreEl.textContent = "Hits: " + hits;
+            break;
+          }
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (shipImg.complete)
+        ctx.drawImage(shipImg, ship.x, ship.y, ship.w, ship.h);
+      else {
+        ctx.fillStyle = "lightgreen";
+        ctx.fillRect(ship.x, ship.y, ship.w, ship.h);
+      }
+
+      asteroids.forEach((a) => {
+        if (asteroidImg.complete)
+          ctx.drawImage(asteroidImg, a.x, a.y, a.w, a.h);
+        else {
+          ctx.fillStyle = "gray";
+          ctx.beginPath();
+          ctx.arc(a.x + 20, a.y + 20, 20, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      bullets.forEach((b) => {
+        ctx.beginPath();
+        ctx.fillStyle = "red";
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    requestAnimationFrame(loop);
+  </script>
+
+</body>
+</html>

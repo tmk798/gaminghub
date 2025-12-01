@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login | Gaming Hub</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap');
+
+    :root {
+      --rgb1: #ff006a;
+      --rgb2: #00e5ff;
+      --rgb3: #8b5cff;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Orbitron", system-ui, sans-serif;
+      color: #e2e8f0;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(0, 255, 170, 0.15) 0, transparent 50%),
+        radial-gradient(circle at 80% 0%, rgba(0, 170, 255, 0.18) 0, transparent 55%),
+        radial-gradient(circle at 50% 100%, rgba(255, 0, 120, 0.18) 0, #020617 60%);
+      overflow: hidden;
+    }
+
+    /* Stars background */
+    .star-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.9), transparent),
+        radial-gradient(2px 2px at 80% 70%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1.5px 1.5px at 40% 80%, rgba(255,255,255,0.8), transparent),
+        radial-gradient(1.5px 1.5px at 60% 20%, rgba(255,255,255,0.6), transparent);
+      opacity: 0.6;
+      animation: twinkle 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes twinkle {
+      0% { opacity: 0.3; transform: scale(1); }
+      100% { opacity: 0.8; transform: scale(1.02); }
+    }
+
+    /* Moving gradient glow behind card */
+    .glow-orbit {
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      border-radius: 999px;
+      background: conic-gradient(
+        from 0deg,
+        var(--rgb1),
+        var(--rgb2),
+        var(--rgb3),
+        var(--rgb1)
+      );
+      filter: blur(40px);
+      opacity: 0.5;
+      animation: spin 12s linear infinite;
+      z-index: -2;
+    }
+
+    @keyframes spin {
+      0%   { transform: translate(-10%, -10%) rotate(0deg); }
+      100% { transform: translate(-10%, -10%) rotate(360deg); }
+    }
+
+    /* RGB animated border */
+    .rgb-card {
+      position: relative;
+      border-radius: 1.25rem;
+      padding: 2px;
+      background: linear-gradient(
+        130deg,
+        rgba(255, 0, 106, 0.9),
+        rgba(0, 229, 255, 0.9),
+        rgba(139, 92, 255, 0.9)
+      );
+      background-size: 200% 200%;
+      animation: border-rgb 6s ease infinite;
+    }
+
+    @keyframes border-rgb {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .rgb-card-inner {
+      border-radius: 1.15rem;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(3,7,18,0.98));
+      box-shadow:
+        0 0 25px rgba(15, 23, 42, 0.9),
+        0 0 45px rgba(0, 0, 0, 0.9);
+    }
+
+    .neon-text {
+      text-shadow:
+        0 0 8px rgba(56, 189, 248, 0.9),
+        0 0 18px rgba(129, 140, 248, 0.7);
+    }
+
+    .accent-rgb {
+      background-image: linear-gradient(90deg, var(--rgb1), var(--rgb2), var(--rgb3));
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .scan-line {
+      position: fixed;
+      height: 2px;
+      width: 100%;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.7), transparent);
+      top: 0;
+      animation: scan 4s linear infinite;
+      mix-blend-mode: screen;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    @keyframes scan {
+      0%   { transform: translateY(-10%); }
+      100% { transform: translateY(110vh); }
+    }
+  </style>
+</head>
+
+<body class="flex items-center justify-center px-4">
+
+  <!-- Starry sky & scan line -->
+  <div class="star-layer"></div>
+  <div class="scan-line"></div>
+
+  <!-- RGB glow orbit behind card -->
+  <div class="glow-orbit"></div>
+
+  <!-- MAIN CARD -->
+  <div class="rgb-card w-full max-w-xl">
+    <div class="rgb-card-inner p-10 md:p-12 relative overflow-hidden">
+
+      <!-- subtle top HUD line -->
+      <div class="flex items-center justify-between text-[11px] md:text-xs tracking-[0.16em] text-slate-400 mb-6 uppercase">
+        <span>System: <span class="accent-rgb font-semibold">Gaming Hub Core</span></span>
+        <span class="hidden sm:inline">Mode: <span class="text-emerald-400">Night · RGB</span></span>
+      </div>
+
+      <!-- Title -->
+      <div class="text-center mb-6">
+        <h1 class="text-3xl md:text-4xl font-extrabold neon-text tracking-[0.25em] uppercase">
+          Login
+        </h1>
+        <p class="mt-3 text-xs md:text-sm text-slate-300">
+          Enter the arena using <span class="text-cyan-300 font-semibold">Email + OTP</span> authentication.
+        </p>
+      </div>
+
+      <!-- Steps -->
+      <p class="text-[11px] md:text-xs text-slate-300/90 text-center mb-7">
+        Type your email → hit <span class="text-emerald-400 font-semibold">Send OTP</span> → check inbox →
+        enter code → <span class="text-pink-400 font-semibold">Spawn In</span>.
+      </p>
+
+      <!-- FORM -->
+      <form method="POST" action="/login" class="space-y-7">
+
+        <!-- Email -->
+        <div>
+          <label class="block text-xs md:text-sm mb-2 font-semibold text-sky-200 tracking-wide">
+            Email Address
+          </label>
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="player@galaxy.gg"
+            class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-4 py-3.5 text-sm md:text-base outline-none
+                   focus:border-cyan-400 focus:ring focus:ring-cyan-500/30
+                   placeholder:text-slate-500"
+          />
+        </div>
+
+        <!-- OTP -->
+        <div>
+          <label class="block text-xs md:text-sm mb-2 font-semibold text-sky-200 tracking-wide">
+            One Time Passcode (OTP)
+          </label>
+          <input
+            type="text"
+            maxlength="6"
+            name="otp"
+            placeholder="••••••"
+            class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-4 py-3.5 text-lg md:text-2xl outline-none
+                   text-center tracking-[0.45em] font-bold text-cyan-300
+                   focus:border-emerald-400 focus:ring focus:ring-emerald-500/30"
+          />
+          <p class="text-[10px] md:text-[11px] text-slate-400 mt-2">
+            Click <span class="text-emerald-400 font-semibold">Send OTP</span> first. Check Inbox / Spam for the code.
+          </p>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+
+          <!-- SEND OTP BUTTON -->
+          <button
+            type="submit"
+            formaction="/send-otp"
+            class="flex-1 border border-cyan-400/80 text-cyan-200 px-4 py-3 text-xs md:text-sm rounded-xl font-semibold
+                   hover:bg-cyan-500/10 transition flex items-center justify-center gap-2
+                   shadow-lg shadow-cyan-500/30 uppercase tracking-wide"
+          >
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_#22c55e]"></span>
+            Send OTP
+          </button>
+
+          <!-- VERIFY OTP BUTTON -->
+          <button
+            type="submit"
+            class="flex-1 bg-gradient-to-r from-pink-500 via-cyan-400 to-indigo-500 text-slate-950 px-4 py-3
+                   text-xs md:text-sm rounded-xl font-bold hover:brightness-110 transition
+                   flex items-center justify-center gap-2 shadow-xl shadow-pink-500/40 uppercase tracking-wide"
+          >
+            <i class="fa-solid fa-gamepad text-[13px] md:text-sm"></i>
+            Verify & Enter Lobby
+          </button>
+        </div>
+
+      </form>
+
+      <!-- Footer -->
+      <div class="mt-7 md:mt-8 text-center text-[11px] md:text-xs text-slate-400">
+        <a href="/" class="underline hover:text-cyan-300 transition">
+          ← Back to Home Screen
+        </a>
+        <p class="mt-2 text-xs md:text-sm">
+          Made by <span class="accent-rgb font-bold">TheTMKShow</span>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Icons -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+
+</body>
+</html>
